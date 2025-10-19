@@ -1,0 +1,75 @@
+<h3>Checkout</h3>
+<div class="alert alert-info">4 steps: Personal → Shipping → Review → Payment</div>
+
+<!-- Steps -->
+<div id="step1" class="step active">
+  <h5>1) Personal Info</h5>
+  <div class="row g-3">
+    <div class="col-md-6"><input class="form-control" id="chName" placeholder="Full name"></div>
+    <div class="col-md-6"><input class="form-control" id="chEmail" placeholder="Email"></div>
+    <div class="col-md-6"><input class="form-control" id="chPhone" placeholder="Phone"></div>
+  </div>
+  <div class="mt-3 d-flex justify-content-end">
+    <button class="btn btn-primary" id="toStep2">Next</button>
+  </div>
+</div>
+
+<div id="step2" class="step">
+  <h5>2) Shipping</h5>
+  <div class="row g-3">
+    <div class="col-md-8"><input class="form-control" id="chAddr" placeholder="Address"></div>
+    <div class="col-md-4"><input class="form-control" id="chCity" placeholder="City"></div>
+    <div class="col-md-4"><input class="form-control" id="chZip" placeholder="ZIP/Postal"></div>
+    <div class="col-md-4">
+      <select class="form-select" id="chCountry">
+        <option value="">Country</option><option>Bosnia and Herzegovina</option><option>Croatia</option><option>Serbia</option><option>Montenegro</option><option>Other</option>
+      </select>
+    </div>
+  </div>
+  <div class="mt-3 d-flex justify-content-between">
+    <button class="btn btn-outline-secondary backStep" data-back="1">Back</button>
+    <button class="btn btn-primary" id="toStep3">Next</button>
+  </div>
+</div>
+
+<div id="step3" class="step">
+  <h5>3) Review Items</h5>
+  <div class="table-responsive">
+    <table class="table">
+      <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+      <tbody id="reviewTbody"></tbody>
+    </table>
+  </div>
+  <div class="d-flex justify-content-between">
+    <button class="btn btn-outline-secondary backStep" data-back="2">Back</button>
+    <button class="btn btn-primary" id="toStep4">Next</button>
+  </div>
+</div>
+
+<div id="step4" class="step">
+  <h5>4) Payment</h5>
+  <div class="mb-3">
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="payMethod" id="payCard" value="card" checked>
+      <label class="form-check-label" for="payCard">Card</label>
+    </div>
+    <div class="form-check form-check-inline">
+      <input class="form-check-input" type="radio" name="payMethod" id="payPaypal" value="paypal">
+      <label class="form-check-label" for="payPaypal">PayPal</label>
+    </div>
+  </div>
+
+  <div id="cardFields" class="row g-3">
+    <div class="col-12"><input class="form-control" id="cardNumber" placeholder="Card number (16 digits)"></div>
+    <div class="col-md-6"><input class="form-control" id="cardName" placeholder="Card holder name"></div>
+    <div class="col-md-3"><input class="form-control" id="cardExp" placeholder="MM/YY"></div>
+    <div class="col-md-3"><input class="form-control" id="cardCvc" placeholder="CVC"></div>
+  </div>
+
+  <div class="mt-3 d-flex justify-content-between">
+    <button class="btn btn-outline-secondary backStep" data-back="3">Back</button>
+    <button class="btn btn-success" id="finishOrder">Pay</button>
+  </div>
+
+  <div id="payMsg" class="mt-3"></div>
+</div>

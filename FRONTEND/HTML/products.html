@@ -1,0 +1,44 @@
+<div class="container py-4">
+  <h2 class="fw-bold text-success mb-4">Our Products</h2>
+
+  <!-- Search and Filter -->
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <input
+        type="text"
+        id="searchInput"
+        class="form-control"
+        placeholder="🔍 Search products..."
+        oninput="filterProducts()"
+      />
+    </div>
+    <div class="col-md-4">
+      <select id="categoryFilter" class="form-select" onchange="filterProducts()">
+        <option value="">All Categories</option>
+        <option value="Rods">Rods</option>
+        <option value="Reels">Reels</option>
+        <option value="Baits">Baits</option>
+        <option value="Accessories">Accessories</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Products Grid -->
+  <div class="row" id="productsContainer"></div>
+</div>
+
+<!-- ========== MODALS ========== -->
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-body text-center">
+        <img id="modalImage" src="" class="img-fluid rounded" alt="Product Image">
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
