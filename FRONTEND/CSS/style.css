@@ -1,0 +1,12 @@
+body { padding-top: 76px; background: #f7f9fb; }
+.hero {
+  background: url('https://images.unsplash.com/photo-1508182311256-e3f6d34bb2f0?w=1600') center/cover no-repeat;
+  border-radius: 1rem;
+  min-height: 320px;
+}
+.card-product img { cursor: zoom-in; }
+.pointer { cursor: pointer; }
+.step { display: none; }
+.step.active { display: block; }
+.badge-filter { cursor: pointer; }
+.table td, .table th { vertical-align: middle; }
