@@ -134,69 +134,313 @@ function openImageModal(imageSrc) {
 
 
 // ========================================
-// CART & WISHLIST
+// CART & WISHLIST STATE
 // ========================================
-function updateCartBadge() {
-    $("#cart-count").text(appState.cart.length);
+let cart = JSON.parse(localStorage.getItem("cart")) || [];
+let wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
+
+// Save to localStorage
+function saveCart() { localStorage.setItem("cart", JSON.stringify(cart)); }
+function saveWishlist() { localStorage.setItem("wishlist", JSON.stringify(wishlist)); }
+
+// Update badges (if you have icons in navbar)
+function updateBadges() {
+  const c = document.getElementById("cart-count");
+  const w = document.getElementById("wishlist-count");
+  if (c) c.textContent = cart.length;
+  if (w) w.textContent = wishlist.length;
 }
-function updateWishlistBadge() {
-    $("#wishlist-count").text(appState.wishlist.length);
+updateBadges();
+
+// ========================================
+// CART FUNCTIONS
+// ========================================
+function addToCart(productId) {
+  const p = appState.products.find(x => x.id === productId);
+  const qtyInput = document.getElementById(`qty-${productId}`);
+  const qty = qtyInput ? parseInt(qtyInput.value) : 1;
+
+  const existing = cart.find(x => x.id === p.id);
+  if (existing) {
+    existing.quantity += qty;
+  } else {
+    cart.push({ ...p, quantity: qty });
+  }
+
+  saveCart();
+  updateBadges();
+  alert(`${p.name} added to your cart.`);
 }
 
-function addToCart(id) {
-    const product = appState.products.find(p => p.id == id);
-    if (!product) return;
-    const item = appState.cart.find(i => i.id == id);
-    if (item) item.quantity++;
-    else appState.cart.push({ ...product, quantity: 1 });
-    saveState();
-    updateCartBadge();
-    showAlert(`${product.name} added to cart.`);
+function removeFromCart(productId) {
+  cart = cart.filter(p => p.id !== productId);
+  saveCart();
+  renderCart();
+  updateBadges();
 }
 
-function addToWishlist(id) {
-    const product = appState.products.find(p => p.id == id);
-    if (!product) return;
-    if (!appState.wishlist.some(i => i.id == id)) {
-        appState.wishlist.push(product);
-        saveState();
-        updateWishlistBadge();
-        showAlert(`${product.name} added to wishlist.`);
-    }
+function changeCartQuantity(productId, delta) {
+  const item = cart.find(p => p.id === productId);
+  if (!item) return;
+  item.quantity += delta;
+  if (item.quantity < 1) item.quantity = 1;
+  saveCart();
+  renderCart();
 }
+
+// ========================================
+// WISHLIST FUNCTIONS
+// ========================================
+function addToWishlist(productId) {
+  const p = appState.products.find(x => x.id === productId);
+  if (wishlist.find(x => x.id === productId)) {
+    alert("This product is already in your wishlist.");
+    return;
+  }
+  wishlist.push(p);
+  saveWishlist();
+  updateBadges();
+  alert(`${p.name} added to your wishlist.`);
+}
+
+function removeFromWishlist(productId) {
+  wishlist = wishlist.filter(p => p.id !== productId);
+  saveWishlist();
+  renderWishlist();
+  updateBadges();
+}
+
+// ========================================
+// CART PAGE RENDERING
+// ========================================
+function renderCart() {
+  const container = document.getElementById("cartContainer");
+  if (!container) return;
+
+  if (cart.length === 0) {
+    container.innerHTML = `<div class="alert alert-info">Your cart is empty.</div>`;
+    return;
+  }
+
+  let total = 0;
+  container.innerHTML = `
+    <div class="card shadow-sm p-3">
+      <table class="table align-middle">
+        <thead class="table-primary">
+          <tr>
+            <th>Product</th>
+            <th class="text-center">Qty</th>
+            <th>Price</th>
+            <th>Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cart.map(p => {
+            const sub = p.price * p.quantity;
+            total += sub;
+            return `
+              <tr>
+                <td class="fw-semibold">${p.name}</td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-outline-primary me-1" onclick="changeCartQuantity(${p.id}, -1)">-</button>
+                  ${p.quantity}
+                  <button class="btn btn-sm btn-outline-primary ms-1" onclick="changeCartQuantity(${p.id}, 1)">+</button>
+                </td>
+                <td>$${p.price.toFixed(2)}</td>
+                <td class="fw-bold text-primary">$${sub.toFixed(2)}</td>
+                <td>
+                  <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${p.id})">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+
+      <div class="text-end mt-3">
+        <h4 class="text-primary fw-bold">Total: $${total.toFixed(2)}</h4>
+        <button class="btn btn-success mt-3" onclick="showPage('checkout')">
+          <i class="bi bi-check-circle"></i> Proceed to Checkout
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// ========================================
+// WISHLIST PAGE RENDERING
+// ========================================
+function renderWishlist() {
+  const container = document.getElementById("wishlistContainer");
+  if (!container) return;
+
+  if (wishlist.length === 0) {
+    container.innerHTML = `<div class="alert alert-info">No liked products yet.</div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="row">
+      ${wishlist.map(p => `
+        <div class="col-md-4 mb-4">
+          <div class="card h-100 shadow-sm border-0">
+            <img src="${p.image}" class="card-img-top" alt="${p.name}" style="height: 220px; object-fit: cover;">
+            <div class="card-body text-center">
+              <h5 class="card-title fw-semibold">${p.name}</h5>
+              <p class="text-primary fw-bold">$${p.price.toFixed(2)}</p>
+              <button class="btn btn-outline-danger btn-sm me-2" onclick="removeFromWishlist(${p.id})">
+                <i class="bi bi-heartbreak"></i> Unlike
+              </button>
+              <button class="btn btn-outline-secondary btn-sm" onclick="viewSingleProduct(${p.id})">
+                <i class="bi bi-eye"></i> Inspect
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
 
 // ========================================
 // CHECKOUT LOGIC
 // ========================================
-function validateCheckoutStep(step) {
-    let valid = true;
-    $(`#checkout-step-${step} input[required]`).each(function () {
-        if (!$(this).val()) {
-            $(this).addClass("is-invalid");
-            valid = false;
-        } else $(this).removeClass("is-invalid");
-    });
-    return valid;
+let chStep = 1;
+
+function initCheckout() {
+  chStep = 1;
+  showCheckoutStep(chStep);
+  buildReviewTable();
 }
 
-function handlePayment() {
-    const method = $("input[name='paymentMethod']:checked").val();
-    if (method === "card") {
-        if (validateCheckoutStep(4)) {
-            showAlert("Payment successful with card!", "success");
-            appState.cart = [];
-            saveState();
-            updateCartBadge();
-        } else {
-            showAlert("Please fill all card details.", "danger");
-        }
-    } else if (method === "paypal") {
-        showAlert("Purchase completed with PayPal!", "success");
-        appState.cart = [];
-        saveState();
-        updateCartBadge();
-    }
+// Show correct step
+function showCheckoutStep(n) {
+  chStep = n;
+
+  // Hide all steps
+  document.querySelectorAll('#checkout .step').forEach(s => s.classList.remove('active'));
+  const active = document.querySelector(`#checkout #step${n}`);
+  if (active) active.classList.add('active');
+
+  // Update tracker circles (if present)
+  const circles = document.querySelectorAll('#checkout .d-flex > .rounded-circle');
+  if (circles.length) {
+    circles.forEach((c, i) => {
+      c.classList.remove('bg-primary', 'text-white');
+      c.classList.add('bg-light', 'text-muted');
+      if (i < n) {
+        c.classList.remove('bg-light', 'text-muted');
+        c.classList.add('bg-primary', 'text-white');
+      }
+    });
+  }
 }
+
+// Build order review table dynamically
+function buildReviewTable() {
+  const tbody = document.getElementById('reviewTbody');
+  if (!tbody) return;
+
+  const items = window.cart && Array.isArray(window.cart)
+    ? window.cart
+    : JSON.parse(localStorage.getItem('cart') || '[]');
+
+  let total = 0;
+  const rows = items.map(it => {
+    const price = Number(it.price) || 0;
+    const qty = Number(it.quantity) || 1;
+    const subtotal = price * qty;
+    total += subtotal;
+    return `
+      <tr>
+        <td>${it.name ?? '-'}</td>
+        <td>${qty}</td>
+        <td>${price.toFixed(2)}</td>
+        <td>${subtotal.toFixed(2)}</td>
+      </tr>`;
+  });
+
+  tbody.innerHTML = rows.length
+    ? rows.join('') + `<tr class="table-light">
+        <td colspan="3" class="text-end"><strong>Total</strong></td>
+        <td><strong>${total.toFixed(2)}</strong></td>
+      </tr>`
+    : `<tr><td colspan="4" class="text-center text-muted">Your cart is empty.</td></tr>`;
+}
+
+// ========== Step Navigation ==========
+document.addEventListener('click', (e) => {
+  // Step 1 → 2
+  if (e.target.id === 'toStep2') {
+    const name = document.getElementById('chName')?.value.trim();
+    const email = document.getElementById('chEmail')?.value.trim();
+    const phone = document.getElementById('chPhone')?.value.trim();
+    if (!name || !email || !phone) {
+      alert('Please fill in name, email, and phone.');
+      return;
+    }
+    showCheckoutStep(2);
+  }
+
+  // Step 2 → 3
+  if (e.target.id === 'toStep3') {
+    const addr = document.getElementById('chAddr')?.value.trim();
+    const city = document.getElementById('chCity')?.value.trim();
+    const zip = document.getElementById('chZip')?.value.trim();
+    const country = document.getElementById('chCountry')?.value.trim();
+    if (!addr || !city || !zip || !country) {
+      alert('Please complete the shipping form.');
+      return;
+    }
+    showCheckoutStep(3);
+    buildReviewTable();
+  }
+
+  // Step 3 → 4
+  if (e.target.id === 'toStep4') {
+    showCheckoutStep(4);
+  }
+
+  // Back buttons
+  if (e.target.classList.contains('backStep')) {
+    const target = Number(e.target.dataset.back || 1);
+    showCheckoutStep(target);
+  }
+
+  // Finish order / Payment
+  if (e.target.id === 'finishOrder') {
+    const method = document.querySelector('input[name="payMethod"]:checked')?.value || 'card';
+    if (method === 'card') {
+      const n = document.getElementById('cardNumber')?.value.replace(/\s+/g, '');
+      const nm = document.getElementById('cardName')?.value.trim();
+      const ex = document.getElementById('cardExp')?.value.trim();
+      const cv = document.getElementById('cardCvc')?.value.trim();
+      if (!n || n.length < 15 || !nm || !/^\d{2}\/\d{2}$/.test(ex) || !cv || cv.length < 3) {
+        alert('Please enter valid card details.');
+        return;
+      }
+    }
+    document.getElementById('payMsg').innerHTML =
+      `<div class="alert alert-success mt-3">✅ Payment successful! Thank you for your order.</div>`;
+    cart = [];
+    localStorage.removeItem('cart');
+    updateBadges();
+    setTimeout(() => showPage('home'), 2000);
+  }
+});
+
+// Toggle card vs PayPal fields
+document.addEventListener('change', (e) => {
+  if (e.target.name === 'payMethod') {
+    const cardFields = document.getElementById('cardFields');
+    if (!cardFields) return;
+    cardFields.style.display = (e.target.value === 'card') ? '' : 'none';
+  }
+});
 
 // ========================================
 // LOGIN / SIGNUP
@@ -253,62 +497,3 @@ function renderAdminProducts() {
         showAlert("Products updated successfully!");
     });
 }
-
-// ========================================
-// SPA INITIALIZATION (SPAPP FIXED VERSION)
-// ========================================
-$(document).ready(function () {
-    var app = $.spapp({
-        defaultView: "home",
-        templateDir: "HTML/"
-    });
-
-    // Define SPA routes (no absolute paths)
-    app.route({ view: "home", load: "home.html" });
-    app.route({ view: "products", load: "products.html" });
-    app.route({ view: "single_product", load: "single_product.html" });
-    app.route({ view: "aboutus", load: "aboutus.html" });
-    app.route({ view: "cart", load: "cart.html" });
-    app.route({ view: "wishlist", load: "wishlist.html" });
-    app.route({ view: "checkout", load: "checkout.html" });
-    app.route({ view: "login", load: "login.html" });
-    app.route({ view: "signup", load: "signup.html" });
-    app.route({ view: "user", load: "user.html" });
-    app.route({ view: "admin", load: "admin.html" });
-
-    // Run SPA
-    app.run();
-
-    // Global event listeners
-    $(document)
-        .on("click", ".add-to-cart", function () {
-            addToCart($(this).data("id"));
-        })
-        .on("click", ".add-to-wishlist", function () {
-            addToWishlist($(this).data("id"));
-        })
-        .on("click", ".product-img", function () {
-            const id = $(this).data("id");
-            window.location.hash = `#single_product?id=${id}`;
-        });
-
-
-    updateCartBadge();
-    updateWishlistBadge();
-
-    $(window).on("hashchange", function() {
-    if (location.hash === "#products") {
-        setTimeout(renderProductsGrid, 150); // delay to ensure DOM is ready
-    }
-});
-
-
-    $(window).on("hashchange", function () {
-        const current = location.hash.replace("#", "");
-        $("main#spapp > section").hide();
-        $(`#${current}`).show();
-    });
-
-
-    $(window).trigger("hashchange");
-});
