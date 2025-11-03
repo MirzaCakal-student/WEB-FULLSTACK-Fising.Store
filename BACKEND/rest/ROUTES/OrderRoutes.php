@@ -1,27 +1,33 @@
 <?php
+require_once __DIR__ . '/../DAO/OrderDAO.php';
 header("Content-Type: application/json");
-require_once "../DAO/OrderDAO.php";
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 
 $dao = new OrderDAO();
+$method = $_SERVER['REQUEST_METHOD'];
 
-switch($_SERVER['REQUEST_METHOD']) {
+switch ($method) {
     case 'GET':
-        echo json_encode($dao->readAll());
+        if (isset($_GET['user_id'])) {
+            echo json_encode($dao->getByUserId($_GET['user_id']));
+        } else {
+            echo json_encode($dao->getAll());
+        }
         break;
+
     case 'POST':
         $data = json_decode(file_get_contents("php://input"), true);
-        $dao->create($data['user_id'], $data['total_amount'], $data['payment_status']);
-        echo json_encode(["message" => "Order created successfully"]);
+        echo json_encode($dao->insert($data));
         break;
-    case 'PUT':
-        $data = json_decode(file_get_contents("php://input"), true);
-        $dao->updateStatus($data['order_id'], $data['payment_status']);
-        echo json_encode(["message" => "Order status updated"]);
-        break;
+
     case 'DELETE':
-        parse_str(file_get_contents("php://input"), $data);
-        $dao->delete($data['order_id']);
-        echo json_encode(["message" => "Order deleted"]);
+        $id = $_GET['id'] ?? null;
+        echo json_encode($dao->delete($id));
         break;
+
+    default:
+        http_response_code(405);
+        echo json_encode(["error" => "Method not allowed"]);
 }
-?>

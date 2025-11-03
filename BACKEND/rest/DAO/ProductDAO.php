@@ -1,47 +1,34 @@
 <?php
-require_once "Database.php";
+require_once __DIR__ . '/Database.php';
 
 class ProductDAO {
     private $conn;
-    private $table = "products";
+    public function __construct() { $this->conn = Database::connect(); }
 
-    public function __construct() {
-        $this->conn = (new Database())->getConnection();
-    }
-
-    public function create($name, $category, $price, $stock_quantity) {
-        $sql = "INSERT INTO $this->table (name, category, price, stock_quantity)
-                VALUES (:name, :category, :price, :stock_quantity)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(":name", $name);
-        $stmt->bindParam(":category", $category);
-        $stmt->bindParam(":price", $price);
-        $stmt->bindParam(":stock_quantity", $stock_quantity);
-        return $stmt->execute();
-    }
-
-    public function readAll() {
-        $stmt = $this->conn->prepare("SELECT * FROM $this->table");
-        $stmt->execute();
+    public function getAll() {
+        $stmt = $this->conn->query("SELECT * FROM products ORDER BY product_id DESC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function update($id, $name, $category, $price, $stock_quantity) {
-        $sql = "UPDATE $this->table SET name=:name, category=:category, price=:price, stock_quantity=:stock_quantity
-                WHERE product_id=:id";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(":name", $name);
-        $stmt->bindParam(":category", $category);
-        $stmt->bindParam(":price", $price);
-        $stmt->bindParam(":stock_quantity", $stock_quantity);
-        $stmt->bindParam(":id", $id);
-        return $stmt->execute();
+    public function getById($id) {
+        $stmt = $this->conn->prepare("SELECT * FROM products WHERE product_id=?");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function create($name, $category, $price, $stock_quantity, $image_url=null) {
+        $stmt = $this->conn->prepare("INSERT INTO products(name,category,price,stock_quantity,image_url) VALUES(?,?,?,?,?)");
+        $stmt->execute([$name,$category,$price,$stock_quantity,$image_url]);
+        return $this->conn->lastInsertId();
+    }
+
+    public function update($id, $name, $category, $price, $stock_quantity, $image_url) {
+        $stmt = $this->conn->prepare("UPDATE products SET name=?, category=?, price=?, stock_quantity=?, image_url=? WHERE product_id=?");
+        return $stmt->execute([$name,$category,$price,$stock_quantity,$image_url,$id]);
     }
 
     public function delete($id) {
-        $stmt = $this->conn->prepare("DELETE FROM $this->table WHERE product_id=:id");
-        $stmt->bindParam(":id", $id);
-        return $stmt->execute();
+        $stmt = $this->conn->prepare("DELETE FROM products WHERE product_id=?");
+        return $stmt->execute([$id]);
     }
 }
-?>

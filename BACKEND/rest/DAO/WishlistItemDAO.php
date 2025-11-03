@@ -1,33 +1,27 @@
 <?php
-require_once "Database.php";
+require_once __DIR__ . '/Database.php';
 
 class WishlistItemDAO {
     private $conn;
-    private $table = "wishlist_items";
+    public function __construct() { $this->conn = Database::connect(); }
 
-    public function __construct() {
-        $this->conn = (new Database())->getConnection();
-    }
-
-    public function create($user_id, $product_id) {
-        $sql = "INSERT INTO $this->table (user_id, product_id)
-                VALUES (:user_id, :product_id)";
+    public function getByUser($user_id) {
+        $sql = "SELECT w.wishlist_item_id, p.product_id, p.name, p.category, p.price, p.image_url
+                FROM wishlist_items w
+                JOIN products p ON p.product_id=w.product_id
+                WHERE w.user_id=?";
         $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(":user_id", $user_id);
-        $stmt->bindParam(":product_id", $product_id);
-        return $stmt->execute();
-    }
-
-    public function readAll() {
-        $stmt = $this->conn->prepare("SELECT * FROM $this->table");
-        $stmt->execute();
+        $stmt->execute([$user_id]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function delete($id) {
-        $stmt = $this->conn->prepare("DELETE FROM $this->table WHERE wishlist_item_id=:id");
-        $stmt->bindParam(":id", $id);
-        return $stmt->execute();
+    public function add($user_id, $product_id) {
+        $stmt = $this->conn->prepare("INSERT IGNORE INTO wishlist_items(user_id,product_id) VALUES(?,?)");
+        return $stmt->execute([$user_id,$product_id]);
+    }
+
+    public function delete($wishlist_item_id) {
+        $stmt = $this->conn->prepare("DELETE FROM wishlist_items WHERE wishlist_item_id=?");
+        return $stmt->execute([$wishlist_item_id]);
     }
 }
-?>

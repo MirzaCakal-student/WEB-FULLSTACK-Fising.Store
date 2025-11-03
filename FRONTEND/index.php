@@ -31,56 +31,55 @@
 <body>
   <!-- ========== NAVBAR ========== -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow">
-    <div class="container">
-      <a class="navbar-brand" href="#home">
-        <i class="bi bi-water"></i> Fishing Planet
-      </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-        <span class="navbar-toggler-icon"></span>
-      </button>
+  <div class="container">
+    <a class="navbar-brand" href="#home"><i class="bi bi-water"></i> Fishing Planet</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-      <div class="collapse navbar-collapse" id="navbarNav">
-        <ul class="navbar-nav ms-auto">
-          <li class="nav-item"><a class="nav-link" href="#home">Home</a></li>
-          <li class="nav-item"><a class="nav-link" href="#products">Products</a></li>
-          <li class="nav-item"><a class="nav-link" href="#aboutus">About Us</a></li>
-          <li class="nav-item"><a class="nav-link" href="#checkout">Checkout</a></li>
-          <li class="nav-item"><a class="nav-link" href="#login">Login</a></li>
-          <li class="nav-item"><a class="nav-link" href="#user"><i class="bi bi-person"></i></a></li>
-          <li class="nav-item">
-            <a class="nav-link position-relative" href="#wishlist">
-              <i class="bi bi-heart"></i>
-              <span id="wishlist-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link position-relative" href="#cart">
-              <i class="bi bi-cart"></i>
-              <span id="cart-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
-            </a>
-          </li>
-        </ul>
-      </div>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="#home">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#products">Products</a></li>
+        <li class="nav-item"><a class="nav-link" href="#aboutus">About Us</a></li>
+        <li class="nav-item"><a class="nav-link" href="#checkout">Checkout</a></li>
+        <li class="nav-item"><a class="nav-link" href="#login">Login</a></li>
+        <li class="nav-item"><a class="nav-link" href="#admin">Login</a></li>
+        <li class="nav-item"><a class="nav-link" href="#user"><i class="bi bi-person"></i></a></li>
+        <li class="nav-item">
+          <a class="nav-link position-relative" href="#wishlist">
+            <i class="bi bi-heart"></i>
+            <span id="wishlist-count"
+                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link position-relative" href="#cart">
+            <i class="bi bi-cart"></i>
+            <span id="cart-count"
+                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">0</span>
+          </a>
+        </li>
+      </ul>
     </div>
-  </nav>
-
+  </div>
+</nav>
   <!-- ALERTS -->
   <div id="alert-container" class="container mt-3"></div>
 
   <!-- MAIN SPA CONTAINER -->
-  <main id="spapp" class="container mt-5 pt-4" role="main">
-    <section id="home" data-load="HTML/home.html"></section>
-    <section id="products" data-load="HTML/products.html"></section>
-    <section id="single_product" data-load="HTML/single_product.html"></section>
-    <section id="aboutus" data-load="HTML/aboutus.html"></section>
-    <section id="cart" data-load="HTML/cart.html"></section>
-    <section id="wishlist" data-load="HTML/wishlist.html"></section>
-    <section id="checkout" data-load="HTML/checkout.html"></section>
-    <section id="login" data-load="HTML/login.html"></section>
-    <section id="signup" data-load="HTML/signup.html"></section>
-    <section id="user" data-load="HTML/user.html"></section>
-    <section id="admin" data-load="HTML/admin.html"></section>
-  </main>
+  <<main id="spapp" class="container mt-5 pt-4" role="main">
+  <section id="home" data-load="HTML/home.php"></section>
+  <section id="products" data-load="HTML/products.php"></section>
+  <section id="aboutus" data-load="HTML/aboutus.php"></section>
+  <section id="cart" data-load="HTML/cart.php"></section>
+  <section id="wishlist" data-load="HTML/wishlist.php"></section>
+  <section id="checkout" data-load="HTML/checkout.php"></section>
+  <section id="login" data-load="HTML/login.php"></section>
+  <section id="signup" data-load="HTML/signup.php"></section>
+  <section id="user" data-load="HTML/user.php"></section>
+  <section id="admin" data-load="HTML/admin.php"></section>
+</main>
 
   <!-- Image Modal -->
 <div class="modal fade" id="imageModal" tabindex="-1">

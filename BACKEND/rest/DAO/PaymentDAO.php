@@ -1,43 +1,33 @@
 <?php
-require_once "Database.php";
+require_once __DIR__ . '/Database.php';
 
 class PaymentDAO {
     private $conn;
-    private $table = "payments";
+    public function __construct() { $this->conn = Database::connect(); }
 
-    public function __construct() {
-        $this->conn = (new Database())->getConnection();
-    }
-
-    public function create($order_id, $payment_method, $amount, $status) {
-        $sql = "INSERT INTO $this->table (order_id, payment_method, amount, status)
-                VALUES (:order_id, :payment_method, :amount, :status)";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(":order_id", $order_id);
-        $stmt->bindParam(":payment_method", $payment_method);
-        $stmt->bindParam(":amount", $amount);
-        $stmt->bindParam(":status", $status);
-        return $stmt->execute();
-    }
-
-    public function readAll() {
-        $stmt = $this->conn->prepare("SELECT * FROM $this->table");
-        $stmt->execute();
+    public function getAll() {
+        $stmt = $this->conn->query("SELECT * FROM payments ORDER BY created_at DESC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function updateStatus($id, $status) {
-        $sql = "UPDATE $this->table SET status=:status WHERE payment_id=:id";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(":status", $status);
-        $stmt->bindParam(":id", $id);
-        return $stmt->execute();
+    public function getByOrder($order_id) {
+        $stmt = $this->conn->prepare("SELECT * FROM payments WHERE order_id=?");
+        $stmt->execute([$order_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function delete($id) {
-        $stmt = $this->conn->prepare("DELETE FROM $this->table WHERE payment_id=:id");
-        $stmt->bindParam(":id", $id);
-        return $stmt->execute();
+    public function create($order_id, $method, $amount, $status='initiated') {
+        $stmt = $this->conn->prepare("INSERT INTO payments(order_id,payment_method,amount,status) VALUES(?,?,?,?)");
+        return $stmt->execute([$order_id,$method,$amount,$status]);
+    }
+
+    public function updateStatus($payment_id, $status) {
+        $stmt = $this->conn->prepare("UPDATE payments SET status=? WHERE payment_id=?");
+        return $stmt->execute([$status,$payment_id]);
+    }
+
+    public function delete($payment_id) {
+        $stmt = $this->conn->prepare("DELETE FROM payments WHERE payment_id=?");
+        return $stmt->execute([$payment_id]);
     }
 }
-?>

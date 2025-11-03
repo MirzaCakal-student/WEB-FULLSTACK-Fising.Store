@@ -1,27 +1,24 @@
 <?php
+require_once __DIR__ . '/../DAO/PaymentDAO.php';
 header("Content-Type: application/json");
-require_once "../DAO/PaymentDAO.php";
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type");
 
 $dao = new PaymentDAO();
+$method = $_SERVER['REQUEST_METHOD'];
 
-switch($_SERVER['REQUEST_METHOD']) {
+switch ($method) {
     case 'GET':
-        echo json_encode($dao->readAll());
+        echo json_encode($dao->getAll());
         break;
+
     case 'POST':
         $data = json_decode(file_get_contents("php://input"), true);
-        $dao->create($data['order_id'], $data['payment_method'], $data['amount'], $data['status']);
-        echo json_encode(["message" => "Payment created"]);
+        echo json_encode($dao->insert($data));
         break;
-    case 'PUT':
-        $data = json_decode(file_get_contents("php://input"), true);
-        $dao->updateStatus($data['payment_id'], $data['status']);
-        echo json_encode(["message" => "Payment updated"]);
-        break;
-    case 'DELETE':
-        parse_str(file_get_contents("php://input"), $data);
-        $dao->delete($data['payment_id']);
-        echo json_encode(["message" => "Payment deleted"]);
-        break;
+
+    default:
+        http_response_code(405);
+        echo json_encode(["error" => "Method not allowed"]);
 }
-?>
