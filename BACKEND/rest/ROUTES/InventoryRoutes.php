@@ -1,22 +1,46 @@
 <?php
-header("Content-Type: application/json");
-require_once "../DAO/InventoryDAO.php";
+require_once __DIR__ . '/../DAO/InventoryDAO.php';
 
 $dao = new InventoryDAO();
+$method = $_SERVER["REQUEST_METHOD"];
+header("Content-Type: application/json");
 
-switch($_SERVER['REQUEST_METHOD']) {
-    case 'GET':
-        echo json_encode($dao->readAll());
+switch ($method) {
+
+    case "GET":
+        if (isset($_GET["id"])) {
+            echo json_encode([
+                "message" => "Inventory record fetched",
+                "data" => $dao->getById($_GET["id"])
+            ]);
+        } elseif (isset($_GET["product_id"])) {
+            echo json_encode([
+                "message" => "Inventory for product fetched",
+                "data" => $dao->getByProduct($_GET["product_id"])
+            ]);
+        } else {
+            echo json_encode([
+                "message" => "All inventory records",
+                "data" => $dao->getAll()
+            ]);
+        }
         break;
-    case 'POST':
-        $data = json_decode(file_get_contents("php://input"), true);
-        $dao->create($data['product_id'], $data['change_type'], $data['quantity_change']);
-        echo json_encode(["message" => "Inventory record added"]);
+
+    case "POST":
+        $body = json_decode(file_get_contents("php://input"), true);
+        $id = $dao->insert($body);
+        echo json_encode(["message" => "Inventory record created", "id" => $id]);
         break;
-    case 'DELETE':
-        parse_str(file_get_contents("php://input"), $data);
-        $dao->delete($data['inventory_id']);
-        echo json_encode(["message" => "Inventory record deleted"]);
+
+    case "PUT":
+        $body = json_decode(file_get_contents("php://input"), true);
+        $ok = $dao->update($_GET["id"], $body);
+        echo json_encode(["message" => "Inventory updated", "success" => $ok]);
+        break;
+
+    case "DELETE":
+        $ok = $dao->delete($_GET["id"]);
+        echo json_encode(["message" => "Inventory deleted", "success" => $ok]);
         break;
 }
 ?>

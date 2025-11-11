@@ -1,23 +1,46 @@
 <?php
+require_once __DIR__ . '/../DAO/OrderitemDAO.php';
+
+$dao = new OrderitemDAO();
+$method = $_SERVER["REQUEST_METHOD"];
 header("Content-Type: application/json");
-require_once "../DAO/OrderItemDAO.php";
 
-$dao = new OrderItemDAO();
+switch ($method) {
 
-switch($_SERVER['REQUEST_METHOD']) {
-    case 'GET':
-        echo json_encode($dao->readAll());
+    case "GET":
+        if (isset($_GET["id"])) {
+            echo json_encode([
+                "message" => "Order item fetched",
+                "data" => $dao->getById($_GET["id"])
+            ]);
+        } elseif (isset($_GET["order_id"])) {
+            echo json_encode([
+                "message" => "Order items for order fetched",
+                "data" => $dao->getOrderItems($_GET["order_id"])
+            ]);
+        } else {
+            echo json_encode([
+                "message" => "All order items",
+                "data" => $dao->getAll()
+            ]);
+        }
         break;
-    case 'POST':
-        $data = json_decode(file_get_contents("php://input"), true);
-        $dao->create($data['order_id'], $data['product_id'], $data['quantity'], $data['price']);
-        echo json_encode(["message" => "Order item added"]);
+
+    case "POST":
+        $body = json_decode(file_get_contents("php://input"), true);
+        $id = $dao->insert($body);
+        echo json_encode(["message" => "Order item created", "id" => $id]);
         break;
-    case 'DELETE':
-        parse_str(file_get_contents("php://input"), $data);
-        $dao->delete($data['order_item_id']);
-        echo json_encode(["message" => "Order item deleted"]);
+
+    case "PUT":
+        $body = json_decode(file_get_contents("php://input"), true);
+        $ok = $dao->update($_GET["id"], $body);
+        echo json_encode(["message" => "Order item updated", "success" => $ok]);
+        break;
+
+    case "DELETE":
+        $ok = $dao->delete($_GET["id"]);
+        echo json_encode(["message" => "Order item deleted", "success" => $ok]);
         break;
 }
 ?>
-

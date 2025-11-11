@@ -1,33 +1,47 @@
 <?php
 require_once __DIR__ . '/../DAO/OrderDAO.php';
-header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
 
 $dao = new OrderDAO();
-$method = $_SERVER['REQUEST_METHOD'];
+$method = $_SERVER["REQUEST_METHOD"];
+
+header("Content-Type: application/json");
 
 switch ($method) {
-    case 'GET':
-        if (isset($_GET['user_id'])) {
-            echo json_encode($dao->getByUserId($_GET['user_id']));
+
+    case "GET":
+        if (isset($_GET["id"])) {
+            echo json_encode([
+                "message" => "Order fetched",
+                "data" => $dao->getById($_GET["id"])
+            ]);
+        } elseif (isset($_GET["user_id"])) {
+            echo json_encode([
+                "message" => "Orders by user fetched",
+                "data" => $dao->getByUser($_GET["user_id"])
+            ]);
         } else {
-            echo json_encode($dao->getAll());
+            echo json_encode([
+                "message" => "All orders fetched",
+                "data" => $dao->getAll()
+            ]);
         }
         break;
 
-    case 'POST':
-        $data = json_decode(file_get_contents("php://input"), true);
-        echo json_encode($dao->insert($data));
+    case "POST":
+        $body = json_decode(file_get_contents("php://input"), true);
+        $id = $dao->insert($body);
+        echo json_encode(["message" => "Order created", "id" => $id]);
         break;
 
-    case 'DELETE':
-        $id = $_GET['id'] ?? null;
-        echo json_encode($dao->delete($id));
+    case "PUT":
+        $body = json_decode(file_get_contents("php://input"), true);
+        $ok = $dao->update($_GET["id"], $body);
+        echo json_encode(["message" => "Order updated", "success" => $ok]);
         break;
 
-    default:
-        http_response_code(405);
-        echo json_encode(["error" => "Method not allowed"]);
+    case "DELETE":
+        $ok = $dao->delete($_GET["id"]);
+        echo json_encode(["message" => "Order deleted", "success" => $ok]);
+        break;
 }
+?>
