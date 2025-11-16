@@ -1,16 +1,22 @@
 <?php
-require_once 'BaseDAO.php';
+require_once __DIR__ . '/BaseDao.php';
 
-class OrderitemDAO extends BaseDAO {
+class OrderItemDAO extends BaseDao {
+
     public function __construct() {
-        parent::__construct("order_items");
+        // order_items(order_item_id, order_id, product_id, quantity, price)
+        parent::__construct('order_items', 'order_item_id');
     }
 
-    public function getOrderItems($orderId) {
-        $stmt = $this->connection->prepare("SELECT * FROM order_items WHERE order_id = :oid");
-        $stmt->bindParam(":oid", $orderId);
+    public function getByOrderId($orderId) {
+        $sql = "SELECT oi.*, p.name, p.image_url
+                FROM order_items oi
+                JOIN products p ON oi.product_id = p.product_id
+                WHERE oi.order_id = :order_id";
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->bindValue(':order_id', $orderId);
         $stmt->execute();
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
-?>

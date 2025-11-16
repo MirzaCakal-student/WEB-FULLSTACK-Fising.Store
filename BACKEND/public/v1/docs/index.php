@@ -1,56 +1,28 @@
-<!-- HTML for static distribution bundle build -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <title>Web Programming API</title>
-    <link rel="stylesheet" type="text/css" href="swagger-ui.css" >
-    <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" />
+<head>
+    <meta charset="utf-8">
+    <title>Fishing Planet API Docs</title>
+    <link rel="stylesheet"
+          href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
     <style>
-      html
-      {
-        box-sizing: border-box;
-        overflow: -moz-scrollbars-vertical;
-        overflow-y: scroll;
-      }
-      *,
-      *:before,
-      *:after
-      {
-        box-sizing: inherit;
-      }
-      body
-      {
-        margin:0;
-        background: #fafafa;
-      }
+        body { margin: 0; padding: 0; }
     </style>
-  </head>
-
-  <body>
+</head>
+<body>
     <div id="swagger-ui"></div>
-    <script src="swagger-ui-bundle.js"> </script>
-    <script src="swagger-ui-standalone-preset.js"> </script>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
     <script>
-    window.onload = function() {
-      // Begin Swagger UI call region
-      const ui = SwaggerUIBundle({
-        url: "swagger.php",
-        dom_id: '#swagger-ui',
-        deepLinking: true,
-        presets: [
-          SwaggerUIBundle.presets.apis,
-          SwaggerUIStandalonePreset
-        ],
-        plugins: [
-          SwaggerUIBundle.plugins.DownloadUrl
-        ],
-        layout: "StandaloneLayout"
-      })
-      // End Swagger UI call region
-      window.ui = ui
-    }
-  </script>
-  </body>
+        window.onload = () => {
+            SwaggerUIBundle({
+                url: "swagger.php", // swagger JSON endpoint u istom folderu
+                dom_id: "#swagger-ui",
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                ],
+            });
+        };
+    </script>
+</body>
 </html>

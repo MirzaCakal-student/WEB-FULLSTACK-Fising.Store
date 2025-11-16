@@ -359,3 +359,199 @@ $("#finishOrder").on("click", () => {
         </div>
     `);
 });
+/* ===================================
+   AUTH FORMS (LOGIN & SIGNUP)
+   (frontend only for now)
+=================================== */
+
+$(document).ready(function () {
+  // Handle login submit
+  $(document).on("submit", "#loginForm", function (e) {
+    e.preventDefault();
+
+    const email = $("#loginEmail").val().trim();
+    const password = $("#loginPassword").val().trim();
+
+    if (!email || !password) {
+      showAlert("Please enter email and password.", "warning");
+      return;
+    }
+
+    // Later we'll call backend here – for now just info message
+    showAlert("Login will be connected to backend in Milestone 3.", "info");
+  });
+
+  // Handle signup submit
+  $(document).on("submit", "#signupForm", function (e) {
+    e.preventDefault();
+
+    const name = $("#signupName").val().trim();
+    const surname = $("#signupSurname").val().trim();
+    const email = $("#signupEmail").val().trim();
+    const password = $("#signupPassword").val().trim();
+    const gender = $("input[name='signupGender']:checked").val();
+
+    if (!name || !surname || !email || !password) {
+      showAlert("Please fill in all fields.", "warning");
+      return;
+    }
+
+    // Later we'll send this to backend and create user
+    console.log("Signup data:", { name, surname, email, gender });
+
+    showAlert("Signup will be connected to backend in Milestone 3.", "info");
+
+    // Optionally auto-redirect to login
+    setTimeout(() => {
+      window.location.hash = "#login";
+    }, 800);
+  });
+});
+/* ===================================
+   USER PAGE LOGIC (profile & account)
+=================================== */
+
+// Prefill fields from appState.currentUser
+function prepareUserPage() {
+  const u = appState.currentUser || {};
+
+  $("#userName").val(u.name || "");
+  $("#userEmail").val(u.email || "");
+  $("#userEmailLabel").text(u.email || "guest@example.com");
+}
+
+// Handle profile + password form submit
+$(document).on("submit", "#userProfileForm", async function (e) {
+  e.preventDefault();
+
+  const name = $("#userName").val().trim();
+  const email = $("#userEmail").val().trim();
+  const currentPass = $("#currentPassword").val();
+  const newPass = $("#newPassword").val();
+  const confirmPass = $("#confirmPassword").val();
+
+  // Simple front-end validation
+  if (!name || !email) {
+    showAlert("Please enter your name and email.", "danger");
+    return;
+  }
+
+  if (newPass || confirmPass || currentPass) {
+    if (!currentPass) {
+      showAlert("Enter your current password to change it.", "danger");
+      return;
+    }
+    if (newPass.length < 6) {
+      showAlert("New password should be at least 6 characters.", "danger");
+      return;
+    }
+    if (newPass !== confirmPass) {
+      showAlert("New password and confirmation do not match.", "danger");
+      return;
+    }
+  }
+
+  // TODO: call backend once you create UserRoutes.php
+  // Example structure (you can uncomment when backend is ready):
+  /*
+  try {
+    const res = await fetch(`${API_BASE}UserRoutes.php`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: appState.currentUser.id,
+        name,
+        email,
+        current_password: currentPass,
+        new_password: newPass || null
+      })
+    });
+    const json = await res.json();
+
+    if (json.success) {
+      appState.currentUser.name = name;
+      appState.currentUser.email = email;
+      prepareUserPage();
+      showAlert("Profile updated successfully.", "success");
+    } else {
+      showAlert(json.message || "Failed to update profile.", "danger");
+    }
+  } catch (err) {
+    console.error(err);
+    showAlert("Server error while updating profile.", "danger");
+  }
+  */
+
+  // For now (frontend only) just update local state & show success
+  appState.currentUser.name = name;
+  appState.currentUser.email = email;
+  prepareUserPage();
+  showAlert("Profile changes saved (frontend only, backend later).", "success");
+});
+
+// Logout button
+$(document).on("click", "#btnLogout", function () {
+  // Clear user (later you can also clear tokens, sessions, etc.)
+  appState.currentUser = { id: 0, name: "Guest", email: "" };
+  updateBadges();
+  showAlert("You have been signed out.", "info");
+  window.location.hash = "#login";
+});
+
+// Go to login page
+$(document).on("click", "#btnGoToLogin", function () {
+  window.location.hash = "#login";
+});
+
+// Delete account button
+$(document).on("click", "#btnDeleteAccount", async function () {
+  if (!confirm("Are you sure? This will permanently delete your account later.")) {
+    return;
+  }
+
+  // TODO: backend call (when you create delete route)
+  /*
+  try {
+    const res = await fetch(`${API_BASE}UserRoutes.php?id=${appState.currentUser.id}`, {
+      method: "DELETE"
+    });
+    const json = await res.json();
+
+    if (json.success) {
+      appState.currentUser = { id: 0, name: "Guest", email: "" };
+      appState.cart = [];
+      appState.wishlist = [];
+      updateBadges();
+      showAlert("Account deleted successfully.", "success");
+      window.location.hash = "#home";
+    } else {
+      showAlert(json.message || "Failed to delete account.", "danger");
+    }
+  } catch (err) {
+    console.error(err);
+    showAlert("Server error while deleting account.", "danger");
+  }
+  */
+
+  // Frontend-only behaviour for now
+  appState.currentUser = { id: 0, name: "Guest", email: "" };
+  appState.cart = [];
+  appState.wishlist = [];
+  updateBadges();
+  showAlert("Account deleted (frontend only, connect backend later).", "warning");
+  window.location.hash = "#home";
+});
+
+// When user page is opened via hash (#user), fill the fields
+function handleUserPageHash() {
+  if (location.hash === "#user") {
+    // small delay so HTML is loaded by spapp before we touch DOM
+    setTimeout(prepareUserPage, 80);
+  }
+}
+
+// run once on load
+$(document).ready(function () {
+  handleUserPageHash();
+  $(window).on("hashchange", handleUserPageHash);
+});

@@ -1,27 +1,19 @@
 <?php
 
+use OpenApi\Annotations as OA;
+
 /**
  * @OA\Info(
- *     title="API",
- *     description="Restaurant API",
- *     version="1.0",
- *     @OA\Contact(
- *         email="web2001programming@gmail.com",
- *         name="Web Programming"
- *     )
+ *     title="Fishing Planet API",
+ *     version="1.0.0",
+ *     description="OpenAPI documentation for the Fishing Planet backend (products, cart, wishlist, orders, users, payments, etc.)."
  * )
- */
-
-/**
+ *
  * @OA\Server(
- *      url="http://localhost/web-programming-2025/backend",
- *      description="API server"
+ *     url=BASE_URL,
+ *     description="Local development server"
  * )
-*/
-
-
-
-/**
+ *
  * @OA\SecurityScheme(
  *     securityScheme="ApiKey",
  *     type="apiKey",
