@@ -1,21 +1,4 @@
-<?php
-require_once __DIR__ . '/../../backend/rest/DAO/ProductDAO.php';
-$productDAO = new ProductDAO();
-
-// CRUD actions
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  if (isset($_POST['add'])) {
-    $productDAO->create($_POST['name'], $_POST['category'], $_POST['price'], $_POST['stock_quantity'], $_POST['image_url']);
-  } elseif (isset($_POST['update'])) {
-    $productDAO->update($_POST['product_id'], $_POST['name'], $_POST['category'], $_POST['price'], $_POST['stock_quantity'], $_POST['image_url']);
-  } elseif (isset($_POST['delete'])) {
-    $productDAO->delete($_POST['product_id']);
-  }
-}
-
-$products = $productDAO->getAll();
-?>
-
+<div>
 <h3 class="fw-bold mb-3">Admin Panel</h3>
 <div class="alert alert-warning">Admins can edit products below.</div>
 
@@ -33,10 +16,10 @@ $products = $productDAO->getAll();
   <table class="table align-middle">
     <thead><tr><th>#</th><th>Image</th><th>Name</th><th>Category</th><th>Price</th><th>Qty</th><th>Actions</th></tr></thead>
     <tbody>
-      <?php foreach ($products as $p): ?>
+    
       <tr>
         <form method="POST">
-          <td><?= htmlspecialchars($p['product_id']) ?>
+          <td>
               <input type="hidden" name="product_id" value="<?= $p['product_id'] ?>">
           </td>
           <td><img src="<?= htmlspecialchars($p['image_url']) ?>" width="60"></td>
@@ -51,7 +34,8 @@ $products = $productDAO->getAll();
           </td>
         </form>
       </tr>
-      <?php endforeach; ?>
+      
     </tbody>
   </table>
+</div>
 </div>

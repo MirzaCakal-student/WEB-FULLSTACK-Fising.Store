@@ -1,27 +1,34 @@
 <?php
-require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/BaseDao.php';
 
-class WishlistItemDAO {
-    private $conn;
-    public function __construct() { $this->conn = Database::connect(); }
+class WishlistItemDAO extends BaseDao {
 
-    public function getByUser($user_id) {
-        $sql = "SELECT w.wishlist_item_id, p.product_id, p.name, p.category, p.price, p.image_url
-                FROM wishlist_items w
-                JOIN products p ON p.product_id=w.product_id
-                WHERE w.user_id=?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$user_id]);
+    public function __construct() {
+        // wishlist_items(wishlist_item_id, user_id, product_id, created_at)
+        parent::__construct('wishlist_items', 'wishlist_item_id');
+    }
+
+    public function getByUserId($userId) {
+        $sql = "SELECT wi.*, p.name, p.price, p.image_url
+                FROM wishlist_items wi
+                JOIN products p ON wi.product_id = p.product_id
+                WHERE wi.user_id = :user_id";
+
+        $stmt = $this->connection->prepare($sql);
+        $stmt->bindValue(':user_id', $userId);
+        $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function add($user_id, $product_id) {
-        $stmt = $this->conn->prepare("INSERT IGNORE INTO wishlist_items(user_id,product_id) VALUES(?,?)");
-        return $stmt->execute([$user_id,$product_id]);
-    }
-
-    public function delete($wishlist_item_id) {
-        $stmt = $this->conn->prepare("DELETE FROM wishlist_items WHERE wishlist_item_id=?");
-        return $stmt->execute([$wishlist_item_id]);
+    public function getExistingWishlistItem($userId, $productId) {
+        $stmt = $this->connection->prepare(
+            "SELECT * FROM wishlist_items
+             WHERE user_id = :user_id AND product_id = :product_id"
+        );
+        $stmt->execute([
+            ':user_id'    => $userId,
+            ':product_id' => $productId
+        ]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }

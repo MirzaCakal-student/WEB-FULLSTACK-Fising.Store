@@ -5,10 +5,10 @@ $(document).ready(function() {
     $("#spapp section").hide(); // hide all
     section.show(); // show only active section
 
-    // Try to load .php file instead of .html
-    section.load(`HTML/${page}.php`, function(response, status) {
+    // Load content from HTML folder
+    section.load(`HTML/${page}.html`, function(response, status) {
       if (status === "error") {
-        section.html(`<div class="alert alert-danger mt-3">⚠️ Page <b>${page}.php</b> not found.</div>`);
+        section.html(`<div class="alert alert-danger mt-3">Page ${page}.html not found.</div>`);
       }
     });
   }
