@@ -1,11 +1,9 @@
 RewriteEngine On
 RewriteBase /WEB-FULLSTACK-Fising.Store/BACKEND/
 
+# If the request is for a real file or directory, serve it directly
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
 
-RewriteRule ^$ public/v1/docs/ [L,R=302]
-
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
-
-RewriteRule ^ index.php [L]
+# Otherwise, forward everything to index.php
+RewriteRule ^(.+)$ index.php [QSA,L]

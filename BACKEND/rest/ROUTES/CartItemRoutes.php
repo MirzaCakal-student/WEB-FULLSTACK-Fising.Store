@@ -1,29 +1,13 @@
 <?php
-use OpenApi\Annotations as OA;
-
 
 /**
- * @OA\Get(
- *     path="/cart-items",
- *     tags={"cart"},
- *     summary="Get cart items (optionally filtered by user)",
- *     @OA\Parameter(
- *         name="user_id",
- *         in="query",
- *         required=false,
- *         @OA\Schema(type="integer"),
- *         description="Filter cart by user ID"
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Cart items list"
- *     )
- * )
+ * GET cart items for current user
  */
-Flight::route('GET /cart-items', function () {
-    $user_id = Flight::request()->query['user_id'] ?? null;
+Flight::route('GET /cart', function() {
+    $currentUser = Flight::get('user');
+    
     try {
-        $items = Flight::cartItemService()->get_cart_items($user_id);
+        $items = Flight::cartItemService()->get_cart_by_user($currentUser->user_id);
         Flight::json(['success' => true, 'data' => $items]);
     } catch (Exception $e) {
         Flight::json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -31,92 +15,76 @@ Flight::route('GET /cart-items', function () {
 });
 
 /**
- * @OA\Post(
- *     path="/cart-items",
- *     tags={"cart"},
- *     summary="Add item to cart",
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             required={"user_id","product_id","quantity"},
- *             @OA\Property(property="user_id", type="integer", example=1),
- *             @OA\Property(property="product_id", type="integer", example=3),
- *             @OA\Property(property="quantity", type="integer", example=2)
- *         )
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Item added to cart"
- *     )
- * )
+ * ADD item to cart
  */
-Flight::route('POST /cart-items', function () {
+Flight::route('POST /cart', function() {
+    $currentUser = Flight::get('user');
     $data = Flight::request()->data->getData();
+    
+    // Force the user_id to be the current user
+    $data['user_id'] = $currentUser->user_id;
+    
     try {
-        $created = Flight::cartItemService()->add_cart_item($data);
-        Flight::json(['success' => true, 'data' => $created]);
+        $cart_item_id = Flight::cartItemService()->add($data);
+        Flight::json(['success' => true, 'data' => ['cart_item_id' => $cart_item_id]]);
     } catch (Exception $e) {
         Flight::json(['success' => false, 'message' => $e->getMessage()], 400);
     }
 });
 
 /**
- * @OA\Put(
- *     path="/cart-items/{id}",
- *     tags={"cart"},
- *     summary="Update cart item quantity",
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer"),
- *         description="Cart item ID"
- *     ),
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             @OA\Property(property="quantity", type="integer", example=3)
- *         )
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Cart item updated"
- *     )
- * )
+ * UPDATE cart item quantity
  */
-Flight::route('PUT /cart-items/@id', function ($id) {
+Flight::route('PUT /cart/@id', function($id) {
+    $currentUser = Flight::get('user');
     $data = Flight::request()->data->getData();
+    
+    // Verify ownership (check if this cart item belongs to current user)
+    $cartItem = Flight::cartItemService()->get_by_id($id);
+    if (!$cartItem || $cartItem['user_id'] != $currentUser->user_id) {
+        Flight::halt(403, json_encode(['message' => 'Access denied']));
+    }
+    
     try {
-        $res = Flight::cartItemService()->update_cart_item($id, $data);
-        Flight::json(['success' => true, 'data' => $res]);
+        $result = Flight::cartItemService()->update($id, $data);
+        Flight::json(['success' => true, 'data' => $result]);
     } catch (Exception $e) {
         Flight::json(['success' => false, 'message' => $e->getMessage()], 400);
     }
 });
 
 /**
- * @OA\Delete(
- *     path="/cart-items/{id}",
- *     tags={"cart"},
- *     summary="Delete cart item",
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer"),
- *         description="Cart item ID"
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Item removed from cart"
- *     )
- * )
+ * DELETE cart item
  */
-Flight::route('DELETE /cart-items/@id', function ($id) {
+Flight::route('DELETE /cart/@id', function($id) {
+    $currentUser = Flight::get('user');
+    
+    // Verify ownership
+    $cartItem = Flight::cartItemService()->get_by_id($id);
+    if (!$cartItem || $cartItem['user_id'] != $currentUser->user_id) {
+        Flight::halt(403, json_encode(['message' => 'Access denied']));
+    }
+    
     try {
-        $res = Flight::cartItemService()->delete_cart_item($id);
-        Flight::json(['success' => true, 'data' => $res]);
+        $result = Flight::cartItemService()->delete($id);
+        Flight::json(['success' => true, 'data' => $result]);
     } catch (Exception $e) {
         Flight::json(['success' => false, 'message' => $e->getMessage()], 400);
     }
 });
+
+/**
+ * CLEAR entire cart for current user
+ */
+Flight::route('DELETE /cart', function() {
+    $currentUser = Flight::get('user');
+    
+    try {
+        $result = Flight::cartItemService()->clear_cart($currentUser->user_id);
+        Flight::json(['success' => true, 'data' => $result]);
+    } catch (Exception $e) {
+        Flight::json(['success' => false, 'message' => $e->getMessage()], 400);
+    }
+});
+
+?>

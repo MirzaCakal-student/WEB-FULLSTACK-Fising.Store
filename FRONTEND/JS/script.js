@@ -1,9 +1,9 @@
 /* ===================================
-   FISHING PLANET - MAIN JAVASCRIPT
-   Fully Updated – Works With Your Backend
+   FISHING PLANET - COMPLETE JAVASCRIPT
+   With All Missing Functions
 =================================== */
 
-const API_BASE = "../BACKEND/rest/ROUTES/";
+const API_BASE = "http://localhost/WEB-FULLSTACK-Fising.Store/BACKEND/";
 
 /* ================================
    GLOBAL APP STATE
@@ -13,7 +13,7 @@ let appState = {
     filteredProducts: [],
     cart: [],
     wishlist: [],
-    currentUser: { id: 1, name: "Guest" }
+    currentUser: null
 };
 
 /* ================================
@@ -36,74 +36,245 @@ function updateBadges() {
 }
 
 /* ================================
-   FETCH PRODUCTS (BACKEND)
+   AUTH HELPER - fetchAuth
+================================ */
+async function fetchAuth(endpoint, options = {}) {
+    const token = localStorage.getItem("user_token");
+    
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+
+    if (token) {
+        headers['Authentication'] = token;
+    }
+
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers: headers
+    });
+
+    // If 401, logout user
+    if (response.status === 401) {
+        logout();
+        return null;
+    }
+
+    return response;
+}
+
+/* ================================
+   CHECK IF USER IS LOGGED IN
+================================ */
+function checkAuth() {
+    const token = localStorage.getItem("user_token");
+    const user = localStorage.getItem("user");
+    
+    if (token && user) {
+        appState.currentUser = JSON.parse(user);
+        updateUIForLoggedInUser();
+        return true;
+    }
+    
+    appState.currentUser = null;
+    updateUIForLoggedOutUser();
+    return false;
+}
+
+/* ================================
+   UPDATE UI BASED ON AUTH STATE
+================================ */
+function updateUIForLoggedInUser() {
+    $("#loginNav").hide();
+    $("#signupNav").hide();
+    $("#logoutNav").show();
+    $("#cartNav").show();
+    $("#wishlistNav").show();
+    $("#userInfo").text(`Welcome, ${appState.currentUser.username}!`).show();
+    
+    // Show admin link if admin
+    if (appState.currentUser.role === 'admin') {
+        $("#adminNav").show();
+    } else {
+        $("#adminNav").hide();
+    }
+}
+
+function updateUIForLoggedOutUser() {
+    $("#loginNav").show();
+    $("#signupNav").show();
+    $("#logoutNav").hide();
+    $("#cartNav").hide();
+    $("#wishlistNav").hide();
+    $("#adminNav").hide();
+    $("#userInfo").hide();
+}
+
+/* ================================
+   LOGOUT
+================================ */
+function logout() {
+    localStorage.removeItem("user_token");
+    localStorage.removeItem("user");
+    appState.currentUser = null;
+    appState.cart = [];
+    appState.wishlist = [];
+    window.location.hash = "#home";
+    showAlert("You have been logged out.", "info");
+    updateBadges();
+    updateUIForLoggedOutUser();
+}
+
+/* ================================
+   LOGIN LOGIC
+================================ */
+$(document).on("submit", "#loginForm", async function (e) {
+    e.preventDefault();
+
+    const email = $("#loginEmail").val().trim();
+    const password = $("#loginPassword").val().trim();
+
+    try {
+        // Updated URL to match Lab structure: API_BASE + "auth/login" 
+        const response = await fetch(`${API_BASE}auth/login`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json" 
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Store token as per Lab 10 [cite: 638]
+            localStorage.setItem("user_token", result.data.token);
+            localStorage.setItem("user", JSON.stringify(result.data.user)); // assuming user object is returned
+            
+            appState.currentUser = result.data.user;
+            
+            showAlert("Login successful! Redirecting...", "success");
+            setTimeout(() => {
+                window.location.hash = "#home";
+                location.reload(); 
+            }, 1000);
+        } else {
+            showAlert(result.message || "Login failed", "danger");
+        }
+    } catch (error) {
+        console.error("Login error:", error);
+        showAlert("Server error. Please try again later.", "danger");
+    }
+});
+
+/* ================================
+   SIGNUP LOGIC
+================================ */
+$(document).on("submit", "#signupForm", async function (e) {
+    // ... (previous code) ...
+
+    try {
+        const response = await fetch(`${API_BASE}auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(signupData)
+        });
+        
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // === NEW: AUTO LOGIN ===
+            localStorage.setItem("user_token", result.data.token);
+            localStorage.setItem("user", JSON.stringify(result.data.user));
+            appState.currentUser = result.data.user;
+
+            showAlert("Account created! Logging you in...", "success");
+            
+            // Redirect directly to Home instead of Login
+            setTimeout(() => { 
+                window.location.hash = "#home"; 
+                location.reload(); 
+            }, 1500);
+        } else {
+            showAlert(result.message || "Registration failed", "danger");
+        }
+    } catch (error) {
+        console.error("Registration error:", error);
+        showAlert("Server error", "danger");
+    }
+});
+
+/* ================================
+   FETCH PRODUCTS (PUBLIC)
 ================================ */
 async function fetchProducts() {
     try {
-        const res = await fetch(`${API_BASE}ProductRoutes.php`);
+        const res = await fetch(`${API_BASE}products`);
         const json = await res.json();
 
-        appState.products = json.data.map(p => ({
-            id: p.product_id,
-            name: p.name,
-            category: p.category ?? "general",
-            price: parseFloat(p.price),
-            image: p.image_url,
-            description: p.description ?? "No description provided",
-            stock: p.quantity ?? 0
-        }));
+        if (json.success) {
+            appState.products = json.data.map(p => ({
+                id: p.product_id,
+                name: p.name,
+                category: p.category ?? "general",
+                price: parseFloat(p.price),
+                image: p.image_url,
+                description: p.description ?? "No description",
+                stock: p.stock_quantity ?? 0
+            }));
 
-        appState.filteredProducts = [...appState.products];
-
-        renderProductsPage();
-
+            appState.filteredProducts = [...appState.products];
+            renderProductsPage();
+        }
     } catch (err) {
         console.error("Product fetch error:", err);
-        showAlert("Cannot load products (backend offline)", "danger");
+        showAlert("Cannot load products", "danger");
     }
 }
 
 /* ================================
-   PRODUCTS PAGE RENDERING
+   RENDER PRODUCTS
 ================================ */
 function renderProductsPage() {
     const container = $("#productsContainer");
     if (!container.length) return;
 
+    if (appState.filteredProducts.length === 0) {
+        container.html('<div class="col-12 text-center"><p>No products found</p></div>');
+        return;
+    }
+
     container.html(
         appState.filteredProducts.map(p => `
         <div class="col-md-4 col-lg-3 mb-4">
             <div class="product-card">
-                
                 <div class="product-image-container">
-                    <img src="${p.image}" class="product-image" onclick="openImageModal('${p.image}')">
-
+                    <img src="${p.image}" class="product-image" onclick="openImageModal('${p.image}', '${p.name}')" alt="${p.name}">
                     <button class="wishlist-btn ${isInWishlist(p.id) ? "active" : ""}"
-                            onclick="toggleWishlist(${p.id})">
+                            onclick="toggleWishlist(${p.id})" ${!checkAuth() ? 'disabled' : ''}>
                         <i class="bi bi-heart${isInWishlist(p.id) ? '-fill' : ''}"></i>
                     </button>
                 </div>
-
                 <div class="card-body">
                     <div class="product-category">${p.category}</div>
                     <h5 class="product-title">${p.name}</h5>
                     <div class="product-price">$${p.price.toFixed(2)}</div>
-
+                    <div class="product-stock ${p.stock > 0 ? 'text-success' : 'text-danger'}">
+                        ${p.stock > 0 ? `In Stock (${p.stock})` : 'Out of Stock'}
+                    </div>
+                    ${p.stock > 0 ? `
                     <div class="quantity-control">
                         <button onclick="changeQuantity(${p.id}, -1)">-</button>
-                        <input type="number" id="qty-${p.id}" value="1" min="1">
+                        <input type="number" id="qty-${p.id}" value="1" min="1" max="${p.stock}">
                         <button onclick="changeQuantity(${p.id}, 1)">+</button>
                     </div>
-
                     <div class="d-grid gap-2">
                         <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id})">
                             <i class="bi bi-cart-plus"></i> Add to Cart
                         </button>
-
-                        <button class="btn btn-outline-secondary btn-sm" onclick="openProductModal(${p.id})">
-                            <i class="bi bi-eye"></i> View Details
-                        </button>
                     </div>
+                    ` : '<div class="alert alert-warning">Unavailable</div>'}
                 </div>
             </div>
         </div>
@@ -112,446 +283,429 @@ function renderProductsPage() {
 }
 
 /* ================================
-   PRODUCT SEARCH / FILTER / SORT
+   IMAGE MODAL (MISSING)
 ================================ */
-function filterProducts() {
-    const term = $("#searchInput").val().toLowerCase();
-    const category = $("#categoryFilter").val();
-
-    appState.filteredProducts = appState.products.filter(p => {
-        const matchName = p.name.toLowerCase().includes(term);
-        const matchCat = !category || p.category === category;
-        return matchName && matchCat;
-    });
-
-    sortProducts();
+function openImageModal(imageUrl, productName = "Product Image") {
+    const modalHtml = `
+        <div class="modal fade" id="imageModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">${productName}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img src="${imageUrl}" class="img-fluid" alt="${productName}">
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    $('#imageModal').remove();
+    
+    // Add and show new modal
+    $('body').append(modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+    modal.show();
 }
 
-function sortProducts() {
-    const sortType = $("#sortFilter").val();
-
-    const f = appState.filteredProducts;
-
-    switch (sortType) {
-        case "name-asc": f.sort((a, b) => a.name.localeCompare(b.name)); break;
-        case "name-desc": f.sort((a, b) => b.name.localeCompare(a.name)); break;
-        case "price-asc": f.sort((a, b) => a.price - b.price); break;
-        case "price-desc": f.sort((a, b) => b.price - a.price); break;
-    }
-
+/* ================================
+   SEARCH & FILTER (MISSING)
+================================ */
+function searchProducts(searchTerm) {
+    const term = searchTerm.toLowerCase();
+    appState.filteredProducts = appState.products.filter(p => 
+        p.name.toLowerCase().includes(term) || 
+        p.category.toLowerCase().includes(term)
+    );
     renderProductsPage();
 }
 
-/* ================================
-   PRODUCT MODAL
-================================ */
-function openProductModal(id) {
-    const p = appState.products.find(x => x.id === id);
-    if (!p) return;
-
-    $("#modalProductName").text(p.name);
-
-    $("#modalProductContent").html(`
-        <div class="row">
-            <div class="col-md-6">
-                <img src="${p.image}" class="img-fluid rounded" onclick="openImageModal('${p.image}')">
-            </div>
-
-            <div class="col-md-6">
-                <h3 class="text-primary mb-3">$${p.price.toFixed(2)}</h3>
-                <p>${p.description}</p>
-
-                <div class="quantity-control mb-3">
-                    <button onclick="changeQuantity(${p.id}, -1)">-</button>
-                    <input type="number" id="qty-${p.id}" value="1">
-                    <button onclick="changeQuantity(${p.id}, 1)">+</button>
-                </div>
-
-                <button class="btn btn-primary w-100 mb-2" onclick="addToCart(${p.id})">
-                    <i class="bi bi-cart-plus"></i> Add to Cart
-                </button>
-
-                <button class="btn btn-outline-danger w-100" onclick="toggleWishlist(${p.id})">
-                    <i class="bi bi-heart"></i> Wishlist
-                </button>
-            </div>
-        </div>
-    `);
-
-    new bootstrap.Modal("#productModal").show();
+function filterByCategory(category) {
+    if (category === 'all') {
+        appState.filteredProducts = [...appState.products];
+    } else {
+        appState.filteredProducts = appState.products.filter(p => 
+            p.category.toLowerCase() === category.toLowerCase()
+        );
+    }
+    renderProductsPage();
 }
 
-/* ================================
-   IMAGE MODAL
-================================ */
-function openImageModal(src) {
-    $("#modalImage").attr("src", src);
-    new bootstrap.Modal("#imageModal").show();
-}
-
-/* ================================
-   QUANTITY MODIFY
-================================ */
-function changeQuantity(id, delta) {
-    const el = document.getElementById(`qty-${id}`);
-    let val = parseInt(el.value) + delta;
-    if (val < 1) val = 1;
-    el.value = val;
-}
+// Search form handler
+$(document).on("submit", "#searchForm", function(e) {
+    e.preventDefault();
+    const searchTerm = $("#searchInput").val();
+    searchProducts(searchTerm);
+});
 
 /* ================================
    CART FUNCTIONS
 ================================ */
 async function fetchCart() {
-    const res = await fetch(`${API_BASE}CartItemRoutes.php?user_id=${appState.currentUser.id}`);
-    const json = await res.json();
-    appState.cart = json.data;
-    renderCartPage();
-}
-
-function renderCartPage() {
-    const el = $("#cartContainer");
-    if (!el.length) return;
-
-    if (appState.cart.length === 0) {
-        el.html(`<div class='alert alert-info'>Your cart is empty.</div>`);
+    if (!checkAuth()) {
+        appState.cart = [];
         updateBadges();
         return;
     }
 
-    let total = 0;
-
-    el.html(`
-        <table class="table">
-        ${appState.cart.map(item => {
-            const subtotal = item.price * item.quantity;
-            total += subtotal;
-            return `
-                <tr>
-                    <td>${item.name}</td>
-                    <td>${item.quantity}</td>
-                    <td>$${item.price}</td>
-                    <td>$${subtotal}</td>
-                </tr>
-            `;
-        }).join("")}
-        </table>
-
-        <h4 class="text-end">Total: $${total.toFixed(2)}</h4>
-    `);
-
-    updateBadges();
+    const res = await fetchAuth(`cart`);
+    
+    if (res && res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+            appState.cart = json.data.items || json.data || [];
+            updateBadges();
+        }
+    }
 }
 
-async function addToCart(id) {
-    const qty = document.getElementById(`qty-${id}`)?.value ?? 1;
+async function addToCart(productId) {
+    if (!checkAuth()) {
+        showAlert("Please login to add items to cart!", "warning");
+        window.location.hash = "#login";
+        return;
+    }
 
-    await fetch(`${API_BASE}CartItemRoutes.php`, {
+    const qtyInput = document.getElementById(`qty-${productId}`);
+    const qty = qtyInput ? parseInt(qtyInput.value) : 1;
+
+    const res = await fetchAuth(`cart`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-            user_id: appState.currentUser.id,
-            product_id: id,
-            quantity: parseInt(qty)
+            product_id: productId,
+            quantity: qty
         })
     });
 
-    showAlert("Added to cart!");
-    fetchCart();
+    if (res && res.ok) {
+        showAlert("Added to cart!", "success");
+        await fetchCart();
+        renderCartPage();
+    } else {
+        const error = await res.json();
+        showAlert(error.message || "Failed to add to cart", "danger");
+    }
+}
+
+/* ================================
+   RENDER CART PAGE (MISSING)
+================================ */
+async function renderCartPage() {
+    await fetchCart();
+    
+    const container = $("#cartContainer");
+    if (!container.length) return;
+
+    if (appState.cart.length === 0) {
+        container.html(`
+            <div class="text-center py-5">
+                <i class="bi bi-cart-x" style="font-size: 4rem; color: #ccc;"></i>
+                <h3>Your cart is empty</h3>
+                <a href="#products" class="btn btn-primary mt-3">Start Shopping</a>
+            </div>
+        `);
+        return;
+    }
+
+    let total = 0;
+    const cartHtml = appState.cart.map(item => {
+        const subtotal = item.price * item.quantity;
+        total += subtotal;
+        
+        return `
+            <div class="cart-item mb-3">
+                <div class="row align-items-center">
+                    <div class="col-md-2">
+                        <img src="${item.image_url}" class="img-fluid" alt="${item.name}">
+                    </div>
+                    <div class="col-md-4">
+                        <h5>${item.name}</h5>
+                        <p class="text-muted">$${parseFloat(item.price).toFixed(2)} each</p>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="quantity-control">
+                            <button onclick="updateCartQuantity(${item.cart_item_id}, ${item.quantity - 1})">-</button>
+                            <input type="number" value="${item.quantity}" readonly>
+                            <button onclick="updateCartQuantity(${item.cart_item_id}, ${item.quantity + 1})">+</button>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <strong>$${subtotal.toFixed(2)}</strong>
+                    </div>
+                    <div class="col-md-1">
+                        <button class="btn btn-danger btn-sm" onclick="removeFromCart(${item.cart_item_id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.html(`
+        ${cartHtml}
+        <hr>
+        <div class="text-end">
+            <h4>Total: $${total.toFixed(2)}</h4>
+            <button class="btn btn-success btn-lg mt-3" onclick="proceedToCheckout()">
+                <i class="bi bi-credit-card"></i> Proceed to Checkout
+            </button>
+        </div>
+    `);
+}
+
+/* ================================
+   UPDATE CART QUANTITY (MISSING)
+================================ */
+async function updateCartQuantity(cartItemId, newQuantity) {
+    if (newQuantity < 1) {
+        removeFromCart(cartItemId);
+        return;
+    }
+
+    const res = await fetchAuth(`cart/${cartItemId}`, {
+        method: "PUT",
+        body: JSON.stringify({ quantity: newQuantity })
+    });
+
+    if (res && res.ok) {
+        showAlert("Cart updated!", "success");
+        renderCartPage();
+    } else {
+        showAlert("Failed to update cart", "danger");
+    }
+}
+
+/* ================================
+   REMOVE FROM CART (MISSING)
+================================ */
+async function removeFromCart(cartItemId) {
+    if (!confirm("Remove this item from cart?")) return;
+
+    const res = await fetchAuth(`cart/${cartItemId}`, {
+        method: "DELETE"
+    });
+
+    if (res && res.ok) {
+        showAlert("Item removed from cart", "info");
+        renderCartPage();
+    } else {
+        showAlert("Failed to remove item", "danger");
+    }
+}
+
+/* ================================
+   CHECKOUT (MISSING)
+================================ */
+function proceedToCheckout() {
+    if (appState.cart.length === 0) {
+        showAlert("Your cart is empty!", "warning");
+        return;
+    }
+    
+    // For now, just show alert - you can implement full checkout later
+    showAlert("Checkout feature coming soon!", "info");
+    // window.location.hash = "#checkout";
 }
 
 /* ================================
    WISHLIST FUNCTIONS
 ================================ */
 function isInWishlist(id) {
-    return appState.wishlist.some(w => w.product_id === id || w.id === id);
+    return appState.wishlist.some(w => w.product_id === id);
 }
 
 async function fetchWishlist() {
-    const res = await fetch(`${API_BASE}WishlistItemRoutes.php?user_id=${appState.currentUser.id}`);
-    const json = await res.json();
-    appState.wishlist = json.data;
-    updateBadges();
+    if (!checkAuth()) {
+        appState.wishlist = [];
+        updateBadges();
+        return;
+    }
+
+    const res = await fetchAuth(`wishlist`);
+    if (res && res.ok) {
+        const json = await res.json();
+        appState.wishlist = json.data || [];
+        updateBadges();
+    }
 }
 
 async function toggleWishlist(id) {
-    if (isInWishlist(id)) {
-        await fetch(`${API_BASE}WishlistItemRoutes.php?id=${id}`, { method: "DELETE" });
-        showAlert("Removed from wishlist", "warning");
-    } else {
-        await fetch(`${API_BASE}WishlistItemRoutes.php`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                user_id: appState.currentUser.id,
-                product_id: id
-            })
-        });
-        showAlert("Added to wishlist!", "success");
+    if (!checkAuth()) {
+        showAlert("Please login!", "warning");
+        window.location.hash = "#login";
+        return;
     }
 
-    fetchWishlist();
+    const wishlistItem = appState.wishlist.find(w => w.product_id === id);
+
+    if (wishlistItem) {
+        const res = await fetchAuth(`wishlist/${wishlistItem.wishlist_item_id}`, { 
+            method: "DELETE" 
+        });
+        if (res && res.ok) {
+            showAlert("Removed from wishlist", "info");
+        }
+    } else {
+        const res = await fetchAuth(`wishlist`, {
+            method: "POST",
+            body: JSON.stringify({ product_id: id })
+        });
+        if (res && res.ok) {
+            showAlert("Added to wishlist!", "success");
+        }
+    }
+
+    await fetchWishlist();
     renderProductsPage();
 }
 
 /* ================================
-   PAGE CONTROLLER
+   RENDER WISHLIST PAGE (MISSING)
+================================ */
+async function renderWishlistPage() {
+    await fetchWishlist();
+    
+    const container = $("#wishlistContainer");
+    if (!container.length) return;
+
+    if (appState.wishlist.length === 0) {
+        container.html(`
+            <div class="text-center py-5">
+                <i class="bi bi-heart" style="font-size: 4rem; color: #ccc;"></i>
+                <h3>Your wishlist is empty</h3>
+                <a href="#products" class="btn btn-primary mt-3">Browse Products</a>
+            </div>
+        `);
+        return;
+    }
+
+    const wishlistHtml = appState.wishlist.map(item => `
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="product-card">
+                <div class="product-image-container">
+                    <img src="${item.image_url}" class="product-image" alt="${item.name}">
+                    <button class="wishlist-btn active" onclick="toggleWishlist(${item.product_id})">
+                        <i class="bi bi-heart-fill"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <h5 class="product-title">${item.name}</h5>
+                    <div class="product-price">$${parseFloat(item.price).toFixed(2)}</div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-sm" onclick="addToCartFromWishlist(${item.product_id})">
+                            <i class="bi bi-cart-plus"></i> Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.html(`<div class="row">${wishlistHtml}</div>`);
+}
+
+async function addToCartFromWishlist(productId) {
+    await addToCart(productId);
+}
+
+/* ================================
+   QUANTITY CONTROLS
+================================ */
+function changeQuantity(id, delta) {
+    const el = document.getElementById(`qty-${id}`);
+    if (!el) return;
+    
+    let val = parseInt(el.value) + delta;
+    const max = parseInt(el.getAttribute('max')) || 999;
+    
+    if (val < 1) val = 1;
+    if (val > max) val = max;
+    
+    el.value = val;
+}
+
+/* ================================
+   PAGE CONTROLLER & ROUTER
+================================ */
+function loadPage() {
+    const hash = location.hash.substring(1) || "home";
+    
+    // Hide all sections
+    $("section").hide();
+    
+    // Show requested section
+    $(`#${hash}`).show();
+    
+    // Load data based on page
+    switch(hash) {
+        case "products":
+            fetchProducts();
+            break;
+        case "cart":
+            renderCartPage();
+            break;
+        case "wishlist":
+            renderWishlistPage();
+            break;
+        case "login":
+        case "signup":
+            if (checkAuth()) {
+                window.location.hash = "#home";
+            }
+            break;
+    }
+}
+
+/* ================================
+   INITIALIZE APP
 ================================ */
 $(document).ready(() => {
-    const hash = location.hash;
-
-    if (hash.includes("products")) fetchProducts();
-    if (hash.includes("wishlist")) fetchWishlist();
-    if (hash.includes("cart")) fetchCart();
-
-    updateBadges();
-});
-/* ===================================
-   CHECKOUT STEP WIZARD
-=================================== */
-
-function showCheckoutStep(step) {
-    $(".checkout-step").removeClass("active");
-    $("#step" + step).addClass("active");
-
-    $(".step-circle").removeClass("active");
-    $(`.step-circle[data-step="${step}"]`).addClass("active");
-}
-
-// Next buttons
-$(document).on("click", "[data-next]", function () {
-    const next = $(this).data("next");
-    showCheckoutStep(next);
-
-    if (next === 3) loadReviewOrder();
+    checkAuth();
+    loadPage();
+    
+    // Handle hash changes
+    $(window).on('hashchange', loadPage);
+    
+    // Update badges on load
+    if (checkAuth()) {
+        fetchCart();
+        fetchWishlist();
+    }
 });
 
-// Back buttons
-$(document).on("click", "[data-back]", function () {
-    const back = $(this).data("back");
-    showCheckoutStep(back);
-});
-
-// Load cart review
-function loadReviewOrder() {
-    const tbody = $("#reviewTbody");
-    tbody.html("");
-
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-    cart.forEach(item => {
-        tbody.append(`
-            <tr>
-                <td>${item.name}</td>
-                <td>${item.quantity}</td>
-                <td>$${item.price}</td>
-                <td>$${(item.price * item.quantity).toFixed(2)}</td>
-            </tr>
-        `);
+/* ================================
+   ADMIN FUNCTIONS (IF NEEDED)
+================================ */
+async function deleteProduct(productId) {
+    if (!confirm("Delete this product?")) return;
+    
+    const res = await fetchAuth(`products/${productId}`, {
+        method: "DELETE"
     });
-}
-
-// Finish order
-$("#finishOrder").on("click", () => {
-    $("#payMsg").html(`
-        <div class="alert alert-success mt-3">
-            <i class="bi bi-check-circle"></i> Payment successful! Your order is placed.
-        </div>
-    `);
-});
-/* ===================================
-   AUTH FORMS (LOGIN & SIGNUP)
-   (frontend only for now)
-=================================== */
-
-$(document).ready(function () {
-  // Handle login submit
-  $(document).on("submit", "#loginForm", function (e) {
-    e.preventDefault();
-
-    const email = $("#loginEmail").val().trim();
-    const password = $("#loginPassword").val().trim();
-
-    if (!email || !password) {
-      showAlert("Please enter email and password.", "warning");
-      return;
-    }
-
-    // Later we'll call backend here – for now just info message
-    showAlert("Login will be connected to backend in Milestone 3.", "info");
-  });
-
-  // Handle signup submit
-  $(document).on("submit", "#signupForm", function (e) {
-    e.preventDefault();
-
-    const name = $("#signupName").val().trim();
-    const surname = $("#signupSurname").val().trim();
-    const email = $("#signupEmail").val().trim();
-    const password = $("#signupPassword").val().trim();
-    const gender = $("input[name='signupGender']:checked").val();
-
-    if (!name || !surname || !email || !password) {
-      showAlert("Please fill in all fields.", "warning");
-      return;
-    }
-
-    // Later we'll send this to backend and create user
-    console.log("Signup data:", { name, surname, email, gender });
-
-    showAlert("Signup will be connected to backend in Milestone 3.", "info");
-
-    // Optionally auto-redirect to login
-    setTimeout(() => {
-      window.location.hash = "#login";
-    }, 800);
-  });
-});
-/* ===================================
-   USER PAGE LOGIC (profile & account)
-=================================== */
-
-// Prefill fields from appState.currentUser
-function prepareUserPage() {
-  const u = appState.currentUser || {};
-
-  $("#userName").val(u.name || "");
-  $("#userEmail").val(u.email || "");
-  $("#userEmailLabel").text(u.email || "guest@example.com");
-}
-
-// Handle profile + password form submit
-$(document).on("submit", "#userProfileForm", async function (e) {
-  e.preventDefault();
-
-  const name = $("#userName").val().trim();
-  const email = $("#userEmail").val().trim();
-  const currentPass = $("#currentPassword").val();
-  const newPass = $("#newPassword").val();
-  const confirmPass = $("#confirmPassword").val();
-
-  // Simple front-end validation
-  if (!name || !email) {
-    showAlert("Please enter your name and email.", "danger");
-    return;
-  }
-
-  if (newPass || confirmPass || currentPass) {
-    if (!currentPass) {
-      showAlert("Enter your current password to change it.", "danger");
-      return;
-    }
-    if (newPass.length < 6) {
-      showAlert("New password should be at least 6 characters.", "danger");
-      return;
-    }
-    if (newPass !== confirmPass) {
-      showAlert("New password and confirmation do not match.", "danger");
-      return;
-    }
-  }
-
-  // TODO: call backend once you create UserRoutes.php
-  // Example structure (you can uncomment when backend is ready):
-  /*
-  try {
-    const res = await fetch(`${API_BASE}UserRoutes.php`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: appState.currentUser.id,
-        name,
-        email,
-        current_password: currentPass,
-        new_password: newPass || null
-      })
-    });
-    const json = await res.json();
-
-    if (json.success) {
-      appState.currentUser.name = name;
-      appState.currentUser.email = email;
-      prepareUserPage();
-      showAlert("Profile updated successfully.", "success");
+    
+    if (res && res.ok) {
+        showAlert("Product deleted!", "success");
+        fetchProducts();
     } else {
-      showAlert(json.message || "Failed to update profile.", "danger");
+        showAlert("Failed to delete product", "danger");
     }
-  } catch (err) {
-    console.error(err);
-    showAlert("Server error while updating profile.", "danger");
-  }
-  */
-
-  // For now (frontend only) just update local state & show success
-  appState.currentUser.name = name;
-  appState.currentUser.email = email;
-  prepareUserPage();
-  showAlert("Profile changes saved (frontend only, backend later).", "success");
-});
-
-// Logout button
-$(document).on("click", "#btnLogout", function () {
-  // Clear user (later you can also clear tokens, sessions, etc.)
-  appState.currentUser = { id: 0, name: "Guest", email: "" };
-  updateBadges();
-  showAlert("You have been signed out.", "info");
-  window.location.hash = "#login";
-});
-
-// Go to login page
-$(document).on("click", "#btnGoToLogin", function () {
-  window.location.hash = "#login";
-});
-
-// Delete account button
-$(document).on("click", "#btnDeleteAccount", async function () {
-  if (!confirm("Are you sure? This will permanently delete your account later.")) {
-    return;
-  }
-
-  // TODO: backend call (when you create delete route)
-  /*
-  try {
-    const res = await fetch(`${API_BASE}UserRoutes.php?id=${appState.currentUser.id}`, {
-      method: "DELETE"
-    });
-    const json = await res.json();
-
-    if (json.success) {
-      appState.currentUser = { id: 0, name: "Guest", email: "" };
-      appState.cart = [];
-      appState.wishlist = [];
-      updateBadges();
-      showAlert("Account deleted successfully.", "success");
-      window.location.hash = "#home";
-    } else {
-      showAlert(json.message || "Failed to delete account.", "danger");
-    }
-  } catch (err) {
-    console.error(err);
-    showAlert("Server error while deleting account.", "danger");
-  }
-  */
-
-  // Frontend-only behaviour for now
-  appState.currentUser = { id: 0, name: "Guest", email: "" };
-  appState.cart = [];
-  appState.wishlist = [];
-  updateBadges();
-  showAlert("Account deleted (frontend only, connect backend later).", "warning");
-  window.location.hash = "#home";
-});
-
-// When user page is opened via hash (#user), fill the fields
-function handleUserPageHash() {
-  if (location.hash === "#user") {
-    // small delay so HTML is loaded by spapp before we touch DOM
-    setTimeout(prepareUserPage, 80);
-  }
 }
 
-// run once on load
-$(document).ready(function () {
-  handleUserPageHash();
-  $(window).on("hashchange", handleUserPageHash);
-});
+async function deleteUser(userId) {
+    if (!confirm("Delete this user?")) return;
+    
+    const res = await fetchAuth(`users/${userId}`, {
+        method: "DELETE"
+    });
+    
+    if (res && res.ok) {
+        showAlert("User deleted!", "success");
+        // Refresh user list
+    } else {
+        showAlert("Failed to delete user", "danger");
+    }
+}
