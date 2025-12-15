@@ -47,7 +47,7 @@ class AuthService extends BaseService {
             $payload = [
                 'user' => $newUser,
                 'iat' => time(),
-                'exp' => time() + (60 * 60 * 24) // 1 day
+                'exp' => time() + (60 * 60 * 48) // 48 hours
             ];
 
             $token = JWT::encode($payload, Config::JWT_SECRET(), 'HS256');
@@ -83,7 +83,7 @@ class AuthService extends BaseService {
         $payload = [
             'user' => $user,
             'iat' => time(),
-            'exp' => time() + (60 * 60 * 24) // 1 day
+            'exp' => time() + (60 * 60 * 48) // 48 hours
         ];
 
         $token = JWT::encode($payload, Config::JWT_SECRET(), 'HS256');

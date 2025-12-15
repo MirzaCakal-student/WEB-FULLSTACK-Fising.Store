@@ -20,7 +20,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// 1. REGISTER SERVICES
+// ===================================================
+// 1. REQUIRE ROLES CLASS (MUST BE FIRST!)
+// ===================================================
+require_once __DIR__ . '/rest/Roles.php';
+
+// ===================================================
+// 2. REQUIRE MIDDLEWARE
+// ===================================================
+require_once __DIR__ . '/rest/MIDDLEWARE/AuthMiddleware.php';
+
+// ===================================================
+// 3. REQUIRE SERVICES
+// ===================================================
 require_once __DIR__ . '/rest/SERVICES/AuthService.php';
 require_once __DIR__ . '/rest/SERVICES/AddressService.php';
 require_once __DIR__ . '/rest/SERVICES/CartItemService.php';
@@ -32,8 +44,11 @@ require_once __DIR__ . '/rest/SERVICES/ProductService.php';
 require_once __DIR__ . '/rest/SERVICES/UserService.php';
 require_once __DIR__ . '/rest/SERVICES/WishlistItemService.php';
 
-// Register services (Ensure names match what you use in Routes)
-Flight::register('auth_service', 'AuthService'); // Matching Lab 07 naming
+// ===================================================
+// 4. REGISTER SERVICES
+// ===================================================
+Flight::register('auth_service', 'AuthService');
+Flight::register('authMiddleware', 'AuthMiddleware');
 Flight::register('addressService', 'AddressService');
 Flight::register('cartItemService', 'CartItemService');
 Flight::register('inventoryService', 'InventoryService');
@@ -44,43 +59,113 @@ Flight::register('productService', 'ProductService');
 Flight::register('userService', 'UserService');
 Flight::register('wishlistItemService', 'WishlistItemService');
 
-// 2. MIDDLEWARE (The Robust Fix)
-// Intercept all requests to check for tokens
+// ===================================================
+// 5. MIDDLEWARE (Global Auth Check)
+// ===================================================
 Flight::route('/*', function() {
     $url = Flight::request()->url;
+    $method = Flight::request()->method;
 
-    // PUBLIC ROUTES CHECK
-    // We check if the URL *contains* these strings using !== false
-    // This allows /index.php/auth/login OR /auth/login to both work.
-    if (
-        strpos($url, '/auth/login') !== false ||
-        strpos($url, '/auth/register') !== false ||
-        strpos($url, '/products') !== false ||
-        strpos($url, '/docs') !== false
-    ) {
-        return TRUE; // Allow access to the route
+    // PUBLIC ROUTES (No authentication required)
+    $publicRoutes = [
+        '/auth/login',
+        '/auth/register',
+        '/docs'
+    ];
+
+    // Check if URL starts with any public route
+    foreach ($publicRoutes as $route) {
+        if (strpos($url, $route) === 0) {
+            return TRUE;
+        }
     }
 
-    // PROTECTED ROUTES CHECK
+    // GET /products is public (browse products)
+    if ($method === 'GET' && strpos($url, '/products') === 0) {
+        return TRUE;
+    }
+
+    // PROTECTED ROUTES (Authentication required)
     try {
-        $token = Flight::request()->getHeader("Authentication");
-        
-        if(!$token) {
-            Flight::halt(401, json_encode(["message" => "Missing authentication token"]));
+        // Try to get token from Authorization or Authentication header
+        $token = null;
+
+        // Method 1: Check $_SERVER for HTTP_AUTHORIZATION (standard)
+        if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+            $token = $_SERVER['HTTP_AUTHORIZATION'];
+        }
+        // Method 2: Check $_SERVER for HTTP_AUTHENTICATION (custom)
+        elseif (isset($_SERVER['HTTP_AUTHENTICATION'])) {
+            $token = $_SERVER['HTTP_AUTHENTICATION'];
+        }
+        // Method 3: Check apache_request_headers if available
+        elseif (function_exists('apache_request_headers')) {
+            $headers = apache_request_headers();
+            if (isset($headers['Authorization'])) {
+                $token = $headers['Authorization'];
+            } elseif (isset($headers['authorization'])) {
+                $token = $headers['authorization'];
+            } elseif (isset($headers['Authentication'])) {
+                $token = $headers['Authentication'];
+            } elseif (isset($headers['authentication'])) {
+                $token = $headers['authentication'];
+            }
+        }
+        // Method 4: Check getallheaders if available
+        elseif (function_exists('getallheaders')) {
+            $headers = getallheaders();
+            if (isset($headers['Authorization'])) {
+                $token = $headers['Authorization'];
+            } elseif (isset($headers['authorization'])) {
+                $token = $headers['authorization'];
+            } elseif (isset($headers['Authentication'])) {
+                $token = $headers['Authentication'];
+            } elseif (isset($headers['authentication'])) {
+                $token = $headers['authentication'];
+            }
+        }
+        // Method 5: Manual header parsing from $_SERVER
+        else {
+            foreach ($_SERVER as $key => $value) {
+                $lower_key = strtolower($key);
+                if ($lower_key === 'http_authorization' || $lower_key === 'http_authentication') {
+                    $token = $value;
+                    break;
+                }
+            }
+        }
+
+        if (!$token) {
+            Flight::halt(401, json_encode([
+                "success" => false,
+                "message" => "Missing authentication token"
+            ]));
+        }
+
+        // Remove "Bearer " prefix if present
+        if (stripos($token, 'Bearer ') === 0) {
+            $token = substr($token, 7);
         }
 
         $decoded_token = JWT::decode($token, new Key(Config::JWT_SECRET(), 'HS256'));
 
+        // Store user info for routes to use
         Flight::set('user', $decoded_token->user);
         Flight::set('jwt_token', $token);
+
         return TRUE;
-        
+
     } catch (\Exception $e) {
-        Flight::halt(401, json_encode(["message" => "Invalid token: " . $e->getMessage()]));
+        Flight::halt(401, json_encode([
+            "success" => false,
+            "message" => "Invalid or expired token: " . $e->getMessage()
+        ]));
     }
 });
 
-// 3. LOAD ROUTES
+// ===================================================
+// 6. LOAD ROUTES
+// ===================================================
 require_once __DIR__ . '/rest/ROUTES/AuthRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/AddressRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/CartItemRoutes.php';
@@ -91,6 +176,8 @@ require_once __DIR__ . '/rest/ROUTES/PaymentRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/ProductRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/UserRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/WishlistItemRoutes.php';
-
+// ===================================================
+// 7. START APPLICATION
+// ===================================================
 Flight::start();
 ?>

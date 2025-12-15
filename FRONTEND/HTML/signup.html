@@ -3,88 +3,99 @@
     <div class="auth-header text-center mb-4">
       <i class="bi bi-person-plus auth-icon"></i>
       <h2 class="auth-title">Create Account</h2>
-      <p class="auth-subtitle">Join Fishing Planet and start building your perfect setup.</p>
+      <p class="auth-subtitle">Join Fishing Planet today.</p>
     </div>
 
     <form id="signupForm" novalidate>
       <div class="row g-3">
         <div class="col-md-6">
-          <label for="signupName" class="form-label">Name</label>
-          <input
-            type="text"
-            class="form-control"
-            id="signupName"
-            placeholder="Mirza"
-            required
+          <label for="signupName" class="form-label">First Name <span class="text-danger">*</span></label>
+          <input 
+            type="text" 
+            class="form-control" 
+            id="signupName" 
+            name="first_name"
+            placeholder="Mirza" 
+            required 
+            autocomplete="given-name"
           />
         </div>
         <div class="col-md-6">
-          <label for="signupSurname" class="form-label">Surname</label>
-          <input
-            type="text"
-            class="form-control"
-            id="signupSurname"
-            placeholder="Čakal"
-            required
+          <label for="signupSurname" class="form-label">Last Name <span class="text-danger">*</span></label>
+          <input 
+            type="text" 
+            class="form-control" 
+            id="signupSurname" 
+            name="last_name"
+            placeholder="Čakal" 
+            required 
+            autocomplete="family-name"
           />
         </div>
       </div>
 
       <div class="mt-3">
-        <label for="signupEmail" class="form-label">Email</label>
-        <input
-          type="email"
-          class="form-control"
-          id="signupEmail"
-          placeholder="you@example.com"
-          required
+        <label for="signupEmail" class="form-label">Email <span class="text-danger">*</span></label>
+        <input 
+          type="email" 
+          class="form-control" 
+          id="signupEmail" 
+          name="email"
+          placeholder="you@example.com" 
+          required 
+          autocomplete="email"
         />
+        <div class="email-feedback form-text" style="display:none;"></div>
       </div>
 
       <div class="mt-3">
-        <label for="signupPassword" class="form-label">Password</label>
-        <input
-          type="password"
-          class="form-control"
-          id="signupPassword"
-          placeholder="Choose a strong password"
-          required
-        />
+        <label for="signupPassword" class="form-label">Password <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <input 
+            type="password" 
+            class="form-control" 
+            id="signupPassword" 
+            name="password"
+            placeholder="Strong password" 
+            required 
+            autocomplete="new-password"
+          />
+          <button class="btn btn-outline-secondary toggle-password" type="button" onclick="togglePassword('signupPassword')">
+            <i class="bi bi-eye"></i>
+          </button>
+          <button class="btn btn-outline-primary" type="button" id="generatePassBtn" title="Generate strong password" onclick="generatePassword()">
+            <i class="bi bi-key"></i>
+          </button>
+        </div>
+        
+        <!-- Password Strength Indicator -->
+        <div class="progress mt-2" style="height: 5px;">
+          <div id="passwordStrengthBar" class="progress-bar" role="progressbar" style="width: 0%;"></div>
+        </div>
+        <div id="passwordStrengthText" class="form-text">Password strength: None</div>
+        
+        <!-- Password Requirements -->
+        <div class="form-text mt-2">
+          <small>
+            <i class="bi bi-info-circle"></i> Password should contain:
+            <ul class="mb-0 mt-1" style="font-size: 0.85rem;">
+              <li>At least 6 characters</li>
+              <li>Uppercase and lowercase letters</li>
+              <li>At least one number</li>
+              <li>At least one special character (!@#$%^&*)</li>
+            </ul>
+          </small>
+        </div>
       </div>
 
-      <div class="mt-3">
-        <label class="form-label d-block">Gender</label>
-        <div class="form-check form-check-inline">
-          <input
-            class="form-check-input"
-            type="radio"
-            name="signupGender"
-            id="genderM"
-            value="M"
-            checked
-          />
-          <label class="form-check-label" for="genderM">M</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input
-            class="form-check-input"
-            type="radio"
-            name="signupGender"
-            id="genderF"
-            value="F"
-          />
-          <label class="form-check-label" for="genderF">F</label>
-        </div>
-      </div>
-
-      <button type="submit" class="btn btn-primary w-100">
+      <button type="submit" class="btn btn-primary w-100 mt-4">
         <i class="bi bi-person-check"></i> Sign Up
       </button>
     </form>
 
     <p class="auth-switch text-center mt-3">
-      Already have an account?
-      <a href="#login" class="auth-link">Log in</a>
+      Already have an account? <a href="#login" class="auth-link">Log in</a>
     </p>
   </div>
 </div>
+

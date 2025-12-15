@@ -32,3 +32,4 @@ class CartItemDAO extends BaseDao {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }
+?>

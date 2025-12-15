@@ -17,7 +17,7 @@ class ProductService extends BaseService {
     }
 
     /**
-     * Glavna metoda koju rute koriste – POST /products
+     * Glavna metoda koju rute koriste â€“ POST /products
      */
     public function add_product($data) {
         // Business logic / validation

@@ -17,3 +17,4 @@ class ProductDAO extends BaseDao {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
+?>

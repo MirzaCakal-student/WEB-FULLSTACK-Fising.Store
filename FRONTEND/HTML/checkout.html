@@ -1,116 +1,283 @@
 <div class="container py-4 checkout-container">
 
-  <h2 class="text-center mb-4 text-primary">Checkout</h2>
+  <h2 class="text-center mb-4 text-success">
+    <i class="bi bi-credit-card"></i> Checkout
+  </h2>
 
   <!-- ===== Progress Tracker ===== -->
-  <div class="checkout-progress">
+  <div class="checkout-progress mb-5">
       <div class="progress-line"></div>
-      <div class="step-circle active" data-step="1">1</div>
-      <div class="step-circle" data-step="2">2</div>
-      <div class="step-circle" data-step="3">3</div>
-      <div class="step-circle" data-step="4">4</div>
+      <div class="step-circle active" data-step="1">
+        <span>1</span>
+        <small>Personal Info</small>
+      </div>
+      <div class="step-circle" data-step="2">
+        <span>2</span>
+        <small>Shipping</small>
+      </div>
+      <div class="step-circle" data-step="3">
+        <span>3</span>
+        <small>Review</small>
+      </div>
+      <div class="step-circle" data-step="4">
+        <span>4</span>
+        <small>Payment</small>
+      </div>
   </div>
 
 
-  <!-- ================= STEP 1 ================= -->
+  <!-- ================= STEP 1: PERSONAL INFORMATION ================= -->
   <div id="step1" class="checkout-step active">
     <div class="card shadow-sm p-4">
-      <h4 class="mb-4 text-primary"><i class="bi bi-person"></i> Personal Info</h4>
+      <h4 class="mb-4 text-success"><i class="bi bi-person-fill"></i> Step 1: Personal Information</h4>
+      <p class="text-muted mb-4">Please enter your personal details. All fields are mandatory.</p>
 
-      <div class="row g-3">
-        <div class="col-md-6"><input class="form-control" id="chName" placeholder="Full name"></div>
-        <div class="col-md-6"><input class="form-control" id="chEmail" placeholder="Email"></div>
-        <div class="col-md-6"><input class="form-control" id="chPhone" placeholder="Phone"></div>
-      </div>
+      <form id="personalInfoForm">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="chFirstName" class="form-label">First Name <span class="text-danger">*</span></label>
+            <input class="form-control" id="chFirstName" placeholder="Enter your first name" required>
+            <div class="invalid-feedback">First name is required</div>
+          </div>
+          <div class="col-md-6">
+            <label for="chLastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+            <input class="form-control" id="chLastName" placeholder="Enter your last name" required>
+            <div class="invalid-feedback">Last name is required</div>
+          </div>
+          <div class="col-md-6">
+            <label for="chEmail" class="form-label">Email Address <span class="text-danger">*</span></label>
+            <input type="email" class="form-control" id="chEmail" placeholder="your.email@example.com" required>
+            <div class="invalid-feedback">Valid email from our system is required</div>
+            <small class="text-muted">Email must be registered in our system</small>
+          </div>
+          <div class="col-md-6">
+            <label for="chPhone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+            <input class="form-control" id="chPhone" placeholder="+387 XX XXX XXX" required>
+            <div class="invalid-feedback">Phone number is required</div>
+          </div>
+        </div>
 
-      <div class="mt-4 text-end">
-        <button class="btn btn-primary" data-next="2">Next</button>
-      </div>
+        <div class="mt-4 text-end">
+          <button type="submit" class="btn btn-success">
+            Next <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
 
-  <!-- ================= STEP 2 ================= -->
+  <!-- ================= STEP 2: SHIPPING ADDRESS ================= -->
   <div id="step2" class="checkout-step">
     <div class="card shadow-sm p-4">
-      <h4 class="mb-4 text-primary"><i class="bi bi-truck"></i> Shipping Info</h4>
+      <h4 class="mb-4 text-success"><i class="bi bi-truck-fill"></i> Step 2: Shipping Address</h4>
+      <p class="text-muted mb-4">Please enter your shipping details. All fields are mandatory.</p>
 
-      <div class="row g-3">
-        <div class="col-md-8"><input class="form-control" id="chAddr" placeholder="Address"></div>
-        <div class="col-md-4"><input class="form-control" id="chCity" placeholder="City"></div>
-        <div class="col-md-4"><input class="form-control" id="chZip" placeholder="ZIP/Postal"></div>
-        <div class="col-md-4">
-          <select class="form-select" id="chCountry">
-            <option value="">Country</option>
-            <option>Bosnia and Herzegovina</option>
-            <option>Croatia</option>
-            <option>Serbia</option>
-            <option>Montenegro</option>
-            <option>Other</option>
-          </select>
+      <form id="shippingAddressForm">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="chCountry" class="form-label">Country <span class="text-danger">*</span></label>
+            <select class="form-select" id="chCountry" required>
+              <option value="">Select Country</option>
+              <option value="Bosnia and Herzegovina">Bosnia and Herzegovina</option>
+              <option value="Croatia">Croatia</option>
+              <option value="Serbia">Serbia</option>
+              <option value="Montenegro">Montenegro</option>
+              <option value="Slovenia">Slovenia</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="invalid-feedback">Country is required</div>
+          </div>
+          <div class="col-md-6">
+            <label for="chCity" class="form-label">City <span class="text-danger">*</span></label>
+            <input class="form-control" id="chCity" placeholder="Enter city name" required>
+            <div class="invalid-feedback">City is required</div>
+          </div>
+          <div class="col-12">
+            <label for="chAddr" class="form-label">Street Address <span class="text-danger">*</span></label>
+            <input class="form-control" id="chAddr" placeholder="Street name and number" required>
+            <div class="invalid-feedback">Address is required</div>
+          </div>
+          <div class="col-md-6">
+            <label for="chZip" class="form-label">ZIP / Postal Code <span class="text-danger">*</span></label>
+            <input class="form-control" id="chZip" placeholder="12345" required>
+            <div class="invalid-feedback">ZIP code is required</div>
+          </div>
         </div>
-      </div>
 
-      <div class="mt-4 d-flex justify-content-between">
-        <button class="btn btn-outline-secondary" data-back="1">Back</button>
-        <button class="btn btn-primary" data-next="3">Next</button>
-      </div>
+        <div class="mt-4 d-flex justify-content-between">
+          <button type="button" class="btn btn-outline-secondary" data-back="1">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          <button type="submit" class="btn btn-success">
+            Next <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
 
-  <!-- ================= STEP 3 ================= -->
+  <!-- ================= STEP 3: REVIEW ORDER ================= -->
   <div id="step3" class="checkout-step">
     <div class="card shadow-sm p-4">
-      <h4 class="mb-4 text-primary"><i class="bi bi-list-check"></i> Review Order</h4>
+      <h4 class="mb-4 text-success"><i class="bi bi-cart-check-fill"></i> Step 3: Review Your Order</h4>
+      <p class="text-muted mb-4">Review your cart items and make any final adjustments.</p>
 
       <div class="table-responsive">
         <table class="table table-bordered align-middle">
-          <thead class="table-primary">
-            <tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+          <thead class="table-success">
+            <tr>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Quantity</th>
+              <th>Total</th>
+              <th>Actions</th>
+            </tr>
           </thead>
-          <tbody id="reviewTbody"></tbody>
+          <tbody id="reviewTbody">
+            <!-- Cart items will be loaded here -->
+          </tbody>
         </table>
       </div>
 
+      <!-- Order Summary -->
+      <div class="card bg-light mt-4">
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h5>Personal Information</h5>
+              <p id="reviewPersonalInfo" class="text-muted small"></p>
+            </div>
+            <div class="col-md-6">
+              <h5>Shipping Address</h5>
+              <p id="reviewShippingInfo" class="text-muted small"></p>
+            </div>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal:</span>
+            <strong id="reviewSubtotal">€0.00</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Shipping:</span>
+            <strong id="reviewShipping">€5.00</strong>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between">
+            <h5>Total:</h5>
+            <h5 class="text-success" id="reviewTotal">€0.00</h5>
+          </div>
+        </div>
+      </div>
+
       <div class="mt-4 d-flex justify-content-between">
-        <button class="btn btn-outline-secondary" data-back="2">Back</button>
-        <button class="btn btn-primary" data-next="4">Next</button>
+        <div>
+          <button type="button" class="btn btn-outline-primary me-2" onclick="window.location.hash='#products'">
+            <i class="bi bi-arrow-left-circle"></i> Continue Shopping
+          </button>
+          <button type="button" class="btn btn-outline-secondary" data-back="2">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+        </div>
+        <button type="button" class="btn btn-success" data-next="4">
+          Next <i class="bi bi-arrow-right"></i>
+        </button>
       </div>
     </div>
   </div>
 
 
-  <!-- ================= STEP 4 ================= -->
+  <!-- ================= STEP 4: PAYMENT ================= -->
   <div id="step4" class="checkout-step">
     <div class="card shadow-sm p-4">
-      <h4 class="mb-4 text-primary"><i class="bi bi-credit-card"></i> Payment</h4>
+      <h4 class="mb-4 text-success"><i class="bi bi-credit-card-fill"></i> Step 4: Payment</h4>
+      <p class="text-muted mb-4">Choose your preferred payment method and complete your order.</p>
 
-      <div class="mb-3">
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="payMethod" value="card" checked>
-          <label class="form-check-label">Credit/Debit Card</label>
+      <h5 class="mb-3">Select Payment Method</h5>
+      <div class="payment-methods mb-4">
+        <div class="form-check mb-3 p-3 border rounded">
+          <input class="form-check-input" type="radio" name="payMethod" id="payMethodPaypal" value="paypal" checked>
+          <label class="form-check-label fs-5" for="payMethodPaypal">
+            <i class="bi bi-paypal text-primary"></i> PayPal
+          </label>
         </div>
-        <div class="form-check form-check-inline">
-          <input class="form-check-input" type="radio" name="payMethod" value="paypal">
-          <label class="form-check-label">PayPal</label>
+        <div class="form-check mb-3 p-3 border rounded">
+          <input class="form-check-input" type="radio" name="payMethod" id="payMethodCard" value="card">
+          <label class="form-check-label fs-5" for="payMethodCard">
+            <i class="bi bi-credit-card text-success"></i> Credit/Debit Card
+          </label>
+        </div>
+        <div class="form-check p-3 border rounded">
+          <input class="form-check-input" type="radio" name="payMethod" id="payMethodCash" value="cash">
+          <label class="form-check-label fs-5" for="payMethodCash">
+            <i class="bi bi-cash text-warning"></i> Cash on Delivery
+          </label>
         </div>
       </div>
 
-      <div id="cardFields" class="row g-3">
-        <div class="col-12"><input class="form-control" placeholder="Card number (16 digits)"></div>
-        <div class="col-md-6"><input class="form-control" placeholder="Card holder name"></div>
-        <div class="col-md-3"><input class="form-control" placeholder="MM/YY"></div>
-        <div class="col-md-3"><input class="form-control" placeholder="CVC"></div>
+      <!-- Order Summary -->
+      <div class="card bg-light mb-4">
+        <div class="card-body">
+          <h5 class="mb-3">Order Summary</h5>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal:</span>
+            <span id="finalSubtotal">€0.00</span>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <span>Shipping:</span>
+            <span id="finalShipping">€5.00</span>
+          </div>
+          <hr>
+          <div class="d-flex justify-content-between">
+            <h5>Total Amount:</h5>
+            <h4 class="text-success" id="finalTotal">€0.00</h4>
+          </div>
+        </div>
       </div>
 
       <div class="mt-4 d-flex justify-content-between">
-        <button class="btn btn-outline-secondary" data-back="3">Back</button>
-        <button class="btn btn-success" id="finishOrder">Pay</button>
+        <button type="button" class="btn btn-outline-secondary" data-back="3">
+          <i class="bi bi-arrow-left"></i> Back
+        </button>
+        <button type="button" class="btn btn-success btn-lg" id="finishOrder">
+          <i class="bi bi-check-circle-fill"></i> Complete Payment
+        </button>
       </div>
 
       <div id="payMsg" class="mt-3"></div>
     </div>
   </div>
 
+</div>
+
+<!-- Success Modal -->
+<div class="modal fade" id="paymentSuccessModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-check-circle-fill"></i> Payment Successful!
+        </h5>
+      </div>
+      <div class="modal-body text-center py-5">
+        <i class="bi bi-check-circle text-success" style="font-size: 5rem;"></i>
+        <h3 class="mt-4">Thank You for Your Purchase!</h3>
+        <p class="text-muted mt-3">
+          Your order has been successfully placed.<br>
+          A confirmation email has been sent to:<br>
+          <strong id="confirmEmail" class="text-success"></strong>
+        </p>
+        <p class="mt-3">
+          <span class="text-muted">Order ID:</span><br>
+          <strong class="fs-5" id="confirmOrderId"></strong>
+        </p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-success btn-lg" onclick="CheckoutService.finishCheckout()">
+          <i class="bi bi-arrow-left-circle"></i> Back to Shopping
+        </button>
+      </div>
+    </div>
+  </div>
 </div>

@@ -1,18 +1,20 @@
 <div class="container py-4 user-page">
   <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-lg-10">
 
       <!-- Header card -->
       <div class="card shadow-sm mb-4 user-header-card">
         <div class="card-body d-flex align-items-center">
-          <div class="user-avatar me-3">
-            <i class="bi bi-person-circle"></i>
+          <div class="position-relative me-3">
+            <img id="profilePicturePreview" 
+                 src="/FRONTEND/assets/default-avatar.png" 
+                 alt="Profile"
+                 class="rounded-circle"
+                 style="width: 80px; height: 80px; object-fit: cover; border: 3px solid white;">
           </div>
           <div>
-            <h3 class="mb-1">My Account</h3>
-            <p class="text-muted mb-0">
-              Manage your profile, security and account settings.
-            </p>
+            <h3 class="mb-1" id="profileUserName">My Account</h3>
+            <p class="text-muted mb-0" id="profileUserEmail">you@example.com</p>
           </div>
         </div>
       </div>
@@ -20,73 +22,147 @@
       <div class="row g-4">
 
         <!-- Left: profile + password -->
-        <div class="col-md-7">
+        <div class="col-md-8">
           <div class="card shadow-sm user-card h-100">
             <div class="card-body">
-              <h5 class="card-title mb-3">Profile details</h5>
+              <h5 class="card-title mb-3"><i class="bi bi-person-circle"></i> Profile Details</h5>
 
               <form id="userProfileForm">
-                <!-- Name -->
-                <div class="mb-3">
-                  <label class="form-label">Full name</label>
-                  <input type="text" class="form-control" id="userName" placeholder="Your name">
+                <input type="hidden" id="userId" />
+                
+                <!-- Name and Surname -->
+                <div class="row g-2 mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label">First Name <span class="text-danger">*</span></label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="userFirstName" 
+                           placeholder="First name"
+                           required>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="userLastName" 
+                           placeholder="Last name"
+                           required>
+                  </div>
                 </div>
 
                 <!-- Email -->
                 <div class="mb-3">
-                  <label class="form-label">Email address</label>
-                  <input type="email" class="form-control" id="userEmail" placeholder="you@example.com">
+                  <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                  <input type="email" 
+                         class="form-control" 
+                         id="userEmail" 
+                         placeholder="you@example.com"
+                         required>
+                  <small class="text-muted">Email must be unique</small>
                 </div>
 
-                <hr class="my-3">
+                <div class="d-flex justify-content-end gap-2 mt-3">
+                  <button type="button" class="btn btn-outline-secondary" onclick="UserService.loadProfile()">
+                    <i class="bi bi-arrow-clockwise"></i> Reset
+                  </button>
+                  <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Save Changes
+                  </button>
+                </div>
+              </form>
 
-                <h6 class="text-primary mb-2">
-                  <i class="bi bi-shield-lock"></i> Change password
-                </h6>
+              <hr class="my-4">
 
+              <h6 class="text-primary mb-3">
+                <i class="bi bi-shield-lock"></i> Change Password
+              </h6>
+
+              <form id="changePasswordForm">
                 <div class="mb-3">
-                  <label class="form-label">Current password</label>
-                  <input type="password" class="form-control" id="currentPassword" placeholder="Enter current password">
+                  <label class="form-label">Current Password</label>
+                  <div class="input-group">
+                    <input type="password" 
+                           class="form-control" 
+                           id="currentPassword" 
+                           placeholder="Enter current password">
+                    <button class="btn btn-outline-secondary toggle-password" 
+                            type="button" 
+                            data-target="#currentPassword">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="row g-2">
                   <div class="col-md-6">
-                    <label class="form-label">New password</label>
-                    <input type="password" class="form-control" id="newPassword" placeholder="New password">
+                    <label class="form-label">New Password</label>
+                    <div class="input-group">
+                      <input type="password" 
+                             class="form-control" 
+                             id="newPassword" 
+                             placeholder="New password">
+                      <button class="btn btn-outline-secondary toggle-password" 
+                              type="button" 
+                              data-target="#newPassword">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                    </div>
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label">Confirm new password</label>
-                    <input type="password" class="form-control" id="confirmPassword" placeholder="Repeat new password">
+                    <label class="form-label">Confirm New</label>
+                    <div class="input-group">
+                      <input type="password" 
+                             class="form-control" 
+                             id="confirmPassword" 
+                             placeholder="Confirm">
+                      <button class="btn btn-outline-secondary toggle-password" 
+                              type="button" 
+                              data-target="#confirmPassword">
+                        <i class="bi bi-eye"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                <div class="mt-4 d-flex justify-content-end gap-2">
-                  <button type="reset" class="btn btn-outline-secondary btn-sm">Reset</button>
-                  <button type="submit" class="btn btn-primary">Save changes</button>
+                <!-- Password Strength -->
+                <div class="progress mt-2" style="height: 5px;">
+                  <div id="passwordStrengthBar" 
+                       class="progress-bar" 
+                       style="width: 0%;"></div>
+                </div>
+                <div id="passwordStrengthText" class="form-text">Password strength: None</div>
+
+                <div class="d-flex justify-content-end mt-3">
+                  <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-key"></i> Update Password
+                  </button>
                 </div>
               </form>
+
             </div>
           </div>
         </div>
 
         <!-- Right: session + danger zone -->
-        <div class="col-md-5">
+        <div class="col-md-4">
 
           <!-- Session -->
           <div class="card shadow-sm user-card mb-3">
             <div class="card-body">
-              <h5 class="card-title mb-3">Session</h5>
-              <p class="small text-muted">
-                Logged in as <span id="userEmailLabel" class="fw-semibold">guest@demo.com</span>
+              <h5 class="card-title mb-3"><i class="bi bi-clock-history"></i> Session</h5>
+              <p class="small text-muted mb-2">
+                <strong>Logged in as:</strong><br>
+                <span id="sessionEmail" class="text-primary">guest@demo.com</span>
+              </p>
+              <p class="small text-muted mb-3">
+                <strong>Role:</strong> <span id="sessionRole" class="badge bg-info">User</span>
               </p>
 
-              <button class="btn btn-outline-primary w-100 mb-2" id="btnLogout">
-                <i class="bi bi-box-arrow-right"></i> Sign out
-              </button>
-
-              <button class="btn btn-outline-secondary w-100" id="btnGoToLogin">
-                <i class="bi bi-door-open"></i> Go to login page
-              </button>
+              <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary" onclick="AuthService.logout()">
+                  <i class="bi bi-box-arrow-right"></i> Sign Out
+                </button>
+              </div>
             </div>
           </div>
 
@@ -94,15 +170,14 @@
           <div class="card shadow-sm border-danger user-card">
             <div class="card-body">
               <h5 class="card-title text-danger mb-2">
-                <i class="bi bi-exclamation-triangle-fill"></i> Danger zone
+                <i class="bi bi-exclamation-triangle-fill"></i> Danger Zone
               </h5>
               <p class="small text-muted mb-3">
-                Once you delete your account, there is no way to recover it. All your cart
-                and wishlist data will be removed.
+                Once you delete your account, there is no way to recover it. All data will be permanently removed.
               </p>
 
-              <button class="btn btn-outline-danger w-100" id="btnDeleteAccount">
-                <i class="bi bi-trash"></i> Delete account
+              <button class="btn btn-outline-danger w-100" onclick="UserService.confirmDeleteAccount()">
+                <i class="bi bi-trash"></i> Delete Account
               </button>
             </div>
           </div>

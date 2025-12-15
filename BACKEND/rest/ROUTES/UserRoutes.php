@@ -19,12 +19,16 @@ Flight::route('GET /users', function () {
  */
 Flight::route('GET /users/@id', function ($id) {
     $currentUser = Flight::get('user');
-    
-    // Admin can see anyone, User can only see themselves
-    if ($currentUser->role !== Roles::ADMIN && $currentUser->user_id != $id) {
-        Flight::halt(403, json_encode(['message' => 'Access denied']));
+
+    if (!$currentUser) {
+        Flight::halt(401, json_encode(['success' => false, 'message' => 'User not authenticated']));
     }
-    
+
+    // Admin can see anyone, User can only see themselves
+    if (isset($currentUser->role) && $currentUser->role !== Roles::ADMIN && isset($currentUser->user_id) && $currentUser->user_id != $id) {
+        Flight::halt(403, json_encode(['success' => false, 'message' => 'Access denied']));
+    }
+
     try {
         $user = Flight::userService()->get_user_by_id($id);
         Flight::json(['success' => true, 'data' => $user]);
@@ -54,12 +58,16 @@ Flight::route('POST /users', function () {
  */
 Flight::route('PUT /users/@id', function ($id) {
     $currentUser = Flight::get('user');
-    
-    // Admin can update anyone, User can only update themselves
-    if ($currentUser->role !== Roles::ADMIN && $currentUser->user_id != $id) {
-        Flight::halt(403, json_encode(['message' => 'Access denied']));
+
+    if (!$currentUser) {
+        Flight::halt(401, json_encode(['success' => false, 'message' => 'User not authenticated']));
     }
-    
+
+    // Admin can update anyone, User can only update themselves
+    if (isset($currentUser->role) && $currentUser->role !== Roles::ADMIN && isset($currentUser->user_id) && $currentUser->user_id != $id) {
+        Flight::halt(403, json_encode(['success' => false, 'message' => 'Access denied']));
+    }
+
     $data = Flight::request()->data->getData();
     try {
         $res = Flight::userService()->update_user($id, $data);
@@ -70,11 +78,20 @@ Flight::route('PUT /users/@id', function ($id) {
 });
 
 /**
- * DELETE user (ADMIN ONLY)
+ * DELETE user (User can delete themselves, Admin can delete anyone)
  */
 Flight::route('DELETE /users/@id', function ($id) {
-    Flight::authMiddleware()->authorizeRole(Roles::ADMIN);
-    
+    $currentUser = Flight::get('user');
+
+    if (!$currentUser) {
+        Flight::halt(401, json_encode(['success' => false, 'message' => 'User not authenticated']));
+    }
+
+    // Admin can delete anyone, User can only delete themselves
+    if (isset($currentUser->role) && $currentUser->role !== Roles::ADMIN && isset($currentUser->user_id) && $currentUser->user_id != $id) {
+        Flight::halt(403, json_encode(['success' => false, 'message' => 'Access denied']));
+    }
+
     try {
         $res = Flight::userService()->delete_user($id);
         Flight::json(['success' => true, 'data' => $res]);

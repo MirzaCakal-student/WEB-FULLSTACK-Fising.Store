@@ -6,6 +6,11 @@
 Flight::route('GET /cart', function() {
     $currentUser = Flight::get('user');
     
+    if (!$currentUser) {
+        Flight::json(['success' => false, 'message' => 'User not authenticated'], 401);
+        return;
+    }
+    
     try {
         $items = Flight::cartItemService()->get_cart_by_user($currentUser->user_id);
         Flight::json(['success' => true, 'data' => $items]);
@@ -19,6 +24,12 @@ Flight::route('GET /cart', function() {
  */
 Flight::route('POST /cart', function() {
     $currentUser = Flight::get('user');
+    
+    if (!$currentUser) {
+        Flight::json(['success' => false, 'message' => 'User not authenticated'], 401);
+        return;
+    }
+    
     $data = Flight::request()->data->getData();
     
     // Force the user_id to be the current user
@@ -37,6 +48,12 @@ Flight::route('POST /cart', function() {
  */
 Flight::route('PUT /cart/@id', function($id) {
     $currentUser = Flight::get('user');
+    
+    if (!$currentUser) {
+        Flight::json(['success' => false, 'message' => 'User not authenticated'], 401);
+        return;
+    }
+    
     $data = Flight::request()->data->getData();
     
     // Verify ownership (check if this cart item belongs to current user)
@@ -59,6 +76,11 @@ Flight::route('PUT /cart/@id', function($id) {
 Flight::route('DELETE /cart/@id', function($id) {
     $currentUser = Flight::get('user');
     
+    if (!$currentUser) {
+        Flight::json(['success' => false, 'message' => 'User not authenticated'], 401);
+        return;
+    }
+    
     // Verify ownership
     $cartItem = Flight::cartItemService()->get_by_id($id);
     if (!$cartItem || $cartItem['user_id'] != $currentUser->user_id) {
@@ -78,6 +100,11 @@ Flight::route('DELETE /cart/@id', function($id) {
  */
 Flight::route('DELETE /cart', function() {
     $currentUser = Flight::get('user');
+    
+    if (!$currentUser) {
+        Flight::json(['success' => false, 'message' => 'User not authenticated'], 401);
+        return;
+    }
     
     try {
         $result = Flight::cartItemService()->clear_cart($currentUser->user_id);

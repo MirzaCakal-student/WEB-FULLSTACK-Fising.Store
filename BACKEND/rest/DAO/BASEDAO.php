@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config.php';  // ← This goes UP to rest/ folder
+require_once __DIR__ . '/../config.php';
 
 class BaseDao {
     protected $table;
