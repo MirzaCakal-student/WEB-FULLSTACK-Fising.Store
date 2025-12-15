@@ -68,7 +68,7 @@ const AdminService = {
         <td><img src="${imageUrl}" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" onerror="this.src='${Utils.getPlaceholderImage()}'"></td>
         <td>${p.name}</td>
         <td>${p.category}</td>
-        <td>â‚¬${parseFloat(p.price).toFixed(2)}</td>
+        <td>${parseFloat(p.price).toFixed(2)}</td>
         <td>${p.stock_quantity}</td>
         <td>
           <button class="btn btn-sm btn-primary" onclick="AdminService.editProduct(${p.product_id})">
@@ -355,7 +355,7 @@ const AdminService = {
       <tr>
         <td>${o.order_id}</td>
         <td>User #${o.user_id}</td>
-        <td>â‚¬${parseFloat(o.total_amount).toFixed(2)}</td>
+        <td>${parseFloat(o.total_amount).toFixed(2)}</td>
         <td><span class="badge bg-info">${o.payment_status || 'pending'}</span></td>
         <td>${o.created_at || 'N/A'}</td>
         <td>
@@ -398,7 +398,7 @@ const AdminService = {
       <tr>
         <td>${p.payment_id}</td>
         <td>Order #${p.order_id}</td>
-        <td>â‚¬${parseFloat(p.amount).toFixed(2)}</td>
+        <td>${parseFloat(p.amount).toFixed(2)}</td>
         <td>${p.payment_method || 'N/A'}</td>
         <td><span class="badge bg-success">${p.status || 'completed'}</span></td>
         <td>${p.created_at || 'N/A'}</td>

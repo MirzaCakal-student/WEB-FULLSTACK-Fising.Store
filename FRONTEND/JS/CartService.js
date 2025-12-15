@@ -182,7 +182,7 @@ const CartService = {
                    style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; margin-right: 15px;">
               <div>
                 <h6 class="mb-0">${item.name}</h6>
-                <small class="text-muted">â‚¬${parseFloat(item.price).toFixed(2)} each</small>
+                <small class="text-muted">${parseFloat(item.price).toFixed(2)} each</small>
               </div>
             </div>
           </td>
@@ -195,8 +195,8 @@ const CartService = {
                       onclick="CartService.updateQuantity(${item.cart_item_id}, ${item.quantity + 1})">+</button>
             </div>
           </td>
-          <td>â‚¬${parseFloat(item.price).toFixed(2)}</td>
-          <td><strong>â‚¬${itemTotal.toFixed(2)}</strong></td>
+          <td>${parseFloat(item.price).toFixed(2)}</td>
+          <td><strong>${itemTotal.toFixed(2)}</strong></td>
           <td>
             <button class="btn btn-danger btn-sm" onclick="CartService.removeItem(${item.cart_item_id})">
               <i class="bi bi-trash"></i>
@@ -208,8 +208,8 @@ const CartService = {
 
     if (tbody.length) {
       tbody.html(html);
-      $('#cartSubtotal').text(`â‚¬${subtotal.toFixed(2)}`);
-      $('#cartFinalTotal').text(`â‚¬${subtotal.toFixed(2)}`);
+      $('#cartSubtotal').text(`${subtotal.toFixed(2)}`);
+      $('#cartFinalTotal').text(`${subtotal.toFixed(2)}`);
     }
   },
 

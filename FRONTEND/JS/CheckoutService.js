@@ -124,14 +124,21 @@ const CheckoutService = {
    * Go to specific step with validation
    */
   goToStep: function(step) {
+    console.log('goToStep called - current:', this.currentStep, 'target:', step);
+
     // Validate current step before proceeding
-    if (!this.validateStep(this.currentStep)) {
+    const isValid = this.validateStep(this.currentStep);
+    console.log('Validation result:', isValid);
+
+    if (!isValid) {
+      console.log('Validation failed, staying on step', this.currentStep);
       return;
     }
-    
+
     // Save current step data
     this.saveStepData(this.currentStep);
-    
+    console.log('Step data saved, moving to step', step);
+
     // Show next step
     this.showStep(step);
   },
@@ -185,6 +192,8 @@ const CheckoutService = {
     const email = $('#chEmail').val().trim();
     const phone = $('#chPhone').val().trim();
 
+    console.log('Validating personal info:', { firstName, lastName, email, phone });
+
     if (!firstName) {
       Utils.showToast('Please enter your first name', 'warning');
       $('#chFirstName').addClass('is-invalid');
@@ -205,8 +214,16 @@ const CheckoutService = {
 
     // Check if email exists in database (must match logged-in user)
     const user = AuthService.getCurrentUser();
+    console.log('Current user:', user);
+
+    if (!user) {
+      Utils.showToast('Please log in to continue', 'error');
+      window.location.hash = '#login';
+      return false;
+    }
+
     if (email !== user.email) {
-      Utils.showToast('Email must match your registered account email', 'error');
+      Utils.showToast('Email must match your registered account email: ' + user.email, 'error');
       $('#chEmail').addClass('is-invalid');
       return false;
     }
@@ -220,6 +237,7 @@ const CheckoutService = {
     // Remove invalid classes
     $('#chFirstName, #chLastName, #chEmail, #chPhone').removeClass('is-invalid').addClass('is-valid');
 
+    console.log('Personal info validation passed');
     return true;
   },
 
@@ -423,32 +441,40 @@ const CheckoutService = {
 
     Utils.blockUI('Processing payment...');
 
-    // Generate order ID (timestamp-based)
-    const orderId = 'ORD-' + Date.now();
+    // Prepare checkout data
+    const checkoutData = {
+      email: this.checkoutData.personalInfo.email,
+      firstName: this.checkoutData.personalInfo.firstName,
+      lastName: this.checkoutData.personalInfo.lastName,
+      phone: this.checkoutData.personalInfo.phone,
+      address: this.checkoutData.shippingInfo.address,
+      city: this.checkoutData.shippingInfo.city,
+      zip: this.checkoutData.shippingInfo.zip,
+      country: this.checkoutData.shippingInfo.country,
+      paymentMethod: paymentMethod
+    };
 
-    // Simulate payment processing (in real app, this would call payment gateway)
-    setTimeout(() => {
-      // Clear cart after successful payment
-      RestClient.delete('cart', null, function() {
-        Utils.unblockUI();
+    // Call backend checkout endpoint
+    RestClient.post('checkout', checkoutData, function(response) {
+      Utils.unblockUI();
 
+      if (response.success) {
         // Show success modal
         $('#confirmEmail').text(self.checkoutData.personalInfo.email);
-        $('#confirmOrderId').text(orderId);
+        $('#confirmOrderId').text(response.data.order_id);
 
         const modal = new bootstrap.Modal(document.getElementById('paymentSuccessModal'));
         modal.show();
 
-        // Note: In production, you would:
-        // 1. Create order in database
-        // 2. Create order items
-        // 3. Process payment via payment gateway
-        // 4. Send confirmation email via backend
-      }, function(error) {
-        Utils.unblockUI();
-        Utils.showToast('Failed to complete checkout', 'error');
-      });
-    }, 2000); // Simulate 2-second payment processing
+        Utils.showToast('Order placed successfully!', 'success');
+      } else {
+        Utils.showToast(response.message || 'Checkout failed', 'error');
+      }
+    }, function(xhr) {
+      Utils.unblockUI();
+      const message = xhr.responseJSON?.message || 'Failed to complete checkout';
+      Utils.showToast(message, 'error');
+    });
   },
 
   /**

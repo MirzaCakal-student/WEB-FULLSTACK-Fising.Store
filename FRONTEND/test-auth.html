@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Test</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Authorization Header Test</h1>
+    <button onclick="testAuth()">Test Auth Header</button>
+    <button onclick="testDebug()">Test Debug Endpoint</button>
+    <pre id="result"></pre>
+
+    <script>
+        function testAuth() {
+            const token = localStorage.getItem("user_token");
+            $('#result').text('Token from localStorage: ' + (token ? token.substring(0, 50) + '...' : 'NOT FOUND'));
+
+            if (!token) {
+                $('#result').append('\n\nNO TOKEN IN LOCALSTORAGE!');
+                return;
+            }
+
+            $.ajax({
+                url: 'http://localhost/WEB-FULLSTACK-Fising.Store/BACKEND/cart',
+                type: 'GET',
+                beforeSend: function(xhr) {
+                    console.log('Setting Authorization header:', 'Bearer ' + token.substring(0, 20) + '...');
+                    xhr.setRequestHeader("Authorization", "Bearer " + token);
+                },
+                success: function(response) {
+                    $('#result').append('\n\nSUCCESS: ' + JSON.stringify(response, null, 2));
+                },
+                error: function(xhr) {
+                    $('#result').append('\n\nERROR ' + xhr.status + ': ' + JSON.stringify(xhr.responseJSON, null, 2));
+                }
+            });
+        }
+
+        function testDebug() {
+            const token = localStorage.getItem("user_token") || "test-token-123";
+
+            $.ajax({
+                url: 'http://localhost/WEB-FULLSTACK-Fising.Store/BACKEND/debug/headers',
+                type: 'GET',
+                beforeSend: function(xhr) {
+                    console.log('Setting Authorization header:', 'Bearer ' + token.substring(0, 20) + '...');
+                    xhr.setRequestHeader("Authorization", "Bearer " + token);
+                },
+                success: function(response) {
+                    $('#result').text('DEBUG ENDPOINT RESPONSE:\n' + JSON.stringify(response, null, 2));
+                },
+                error: function(xhr) {
+                    $('#result').text('ERROR ' + xhr.status + ': ' + JSON.stringify(xhr.responseJSON, null, 2));
+                }
+            });
+        }
+    </script>
+</body>
+</html>

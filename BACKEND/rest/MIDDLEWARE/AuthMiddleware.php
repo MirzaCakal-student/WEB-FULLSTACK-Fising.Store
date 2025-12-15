@@ -8,7 +8,7 @@ class AuthMiddleware {
      * Verify JWT Token
      */
     public function verifyToken() {
-        // Get token from Authentication header
+        // 1. Get token from header using FlightPHP method
         $token = Flight::request()->getHeader('Authentication');
 
         if (!$token) {
@@ -16,10 +16,10 @@ class AuthMiddleware {
         }
 
         try {
-            // Decode JWT
+            // 2. Decode JWT
             $decoded = JWT::decode($token, new Key(Config::JWT_SECRET(), 'HS256'));
             
-            // Store user info in Flight for later use
+            // 3. Store user info in Flight for later use
             Flight::set('user', $decoded->user);
             Flight::set('jwt_token', $token);
             
@@ -74,7 +74,7 @@ class AuthMiddleware {
         }
 
         // Admin can access everything
-        if ($user->role === Roles::ADMIN) {
+        if ($user->role === 'admin') {
             return TRUE;
         }
 

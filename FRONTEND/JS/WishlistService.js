@@ -166,7 +166,7 @@ const WishlistService = {
 
           <div class="card-body d-flex flex-column">
             <h5 class="card-title">${item.name}</h5>
-            <p class="card-text fs-4 fw-bold text-success">â‚¬${parseFloat(item.price).toFixed(2)}</p>
+            <p class="card-text fs-4 fw-bold text-success">${parseFloat(item.price).toFixed(2)}</p>
 
             <div class="mt-auto d-flex gap-2">
               <button class="btn btn-success flex-grow-1" onclick="WishlistService.moveToCart(${item.product_id}, ${item.wishlist_item_id})">

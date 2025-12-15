@@ -34,14 +34,19 @@ const Utils = {
       return imageUrl;
     }
 
-    // If it's a relative path (starts with assets/), prepend the project base
+    // If it's a relative path (starts with assets/), prepend the FRONTEND base
     if (imageUrl.startsWith('assets/')) {
-      // Remove 'BACKEND/' from the base URL and add 'FRONTEND/'
       const frontendBase = Constants.PROJECT_BASE_URL.replace('/BACKEND/', '/FRONTEND/');
       return frontendBase + imageUrl;
     }
 
-    // Otherwise return as-is (might be a data URI or absolute path)
+    // If it's just a filename (e.g., "rod1.jpg"), assume it's in FRONTEND/assets/products/
+    if (!imageUrl.includes('/') && !imageUrl.startsWith('.')) {
+      const frontendBase = Constants.PROJECT_BASE_URL.replace('/BACKEND/', '/FRONTEND/');
+      return frontendBase + 'assets/products/' + imageUrl;
+    }
+
+    // Otherwise return as-is
     return imageUrl;
   },
 

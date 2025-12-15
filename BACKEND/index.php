@@ -60,9 +60,24 @@ Flight::register('userService', 'UserService');
 Flight::register('wishlistItemService', 'WishlistItemService');
 
 // ===================================================
-// 5. MIDDLEWARE (Global Auth Check)
+// 5. DEBUG ROUTE (Remove after testing)
 // ===================================================
-Flight::route('/*', function() {
+Flight::route('GET /debug/headers', function() {
+    $debug = [
+        'apache_request_headers' => function_exists('apache_request_headers') ? apache_request_headers() : 'not available',
+        'getallheaders' => function_exists('getallheaders') ? getallheaders() : 'not available',
+        'HTTP_AUTHORIZATION' => isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : 'not set',
+        'REDIRECT_HTTP_AUTHORIZATION' => isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) ? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] : 'not set',
+        'HTTP_AUTHENTICATION' => isset($_SERVER['HTTP_AUTHENTICATION']) ? $_SERVER['HTTP_AUTHENTICATION'] : 'not set',
+        'all_server_keys' => array_keys($_SERVER)
+    ];
+    Flight::json($debug);
+});
+
+// ===================================================
+// 6. MIDDLEWARE (Global Auth Check)
+// ===================================================
+Flight::before('start', function() {
     $url = Flight::request()->url;
     $method = Flight::request()->method;
 
@@ -70,7 +85,8 @@ Flight::route('/*', function() {
     $publicRoutes = [
         '/auth/login',
         '/auth/register',
-        '/docs'
+        '/docs',
+        '/debug/headers'
     ];
 
     // Check if URL starts with any public route
@@ -94,9 +110,17 @@ Flight::route('/*', function() {
         if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
             $token = $_SERVER['HTTP_AUTHORIZATION'];
         }
+        // Method 1b: Check REDIRECT_HTTP_AUTHORIZATION (Apache mod_rewrite)
+        elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+            $token = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+        }
         // Method 2: Check $_SERVER for HTTP_AUTHENTICATION (custom)
         elseif (isset($_SERVER['HTTP_AUTHENTICATION'])) {
             $token = $_SERVER['HTTP_AUTHENTICATION'];
+        }
+        // Method 2b: Check REDIRECT_HTTP_AUTHENTICATION (Apache mod_rewrite)
+        elseif (isset($_SERVER['REDIRECT_HTTP_AUTHENTICATION'])) {
+            $token = $_SERVER['REDIRECT_HTTP_AUTHENTICATION'];
         }
         // Method 3: Check apache_request_headers if available
         elseif (function_exists('apache_request_headers')) {
@@ -136,6 +160,14 @@ Flight::route('/*', function() {
         }
 
         if (!$token) {
+            // Debug: Log what headers we actually received
+            error_log("AUTH DEBUG - No token found. Available headers:");
+            if (function_exists('apache_request_headers')) {
+                error_log("apache_request_headers: " . json_encode(apache_request_headers()));
+            }
+            error_log("HTTP_AUTHORIZATION in \$_SERVER: " . (isset($_SERVER['HTTP_AUTHORIZATION']) ? "YES" : "NO"));
+            error_log("REDIRECT_HTTP_AUTHORIZATION in \$_SERVER: " . (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']) ? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] : "NO"));
+
             Flight::halt(401, json_encode([
                 "success" => false,
                 "message" => "Missing authentication token"
@@ -153,6 +185,9 @@ Flight::route('/*', function() {
         Flight::set('user', $decoded_token->user);
         Flight::set('jwt_token', $token);
 
+        // Debug logging
+        error_log("AUTH SUCCESS - User set: " . json_encode($decoded_token->user));
+
         return TRUE;
 
     } catch (\Exception $e) {
@@ -169,6 +204,7 @@ Flight::route('/*', function() {
 require_once __DIR__ . '/rest/ROUTES/AuthRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/AddressRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/CartItemRoutes.php';
+require_once __DIR__ . '/rest/ROUTES/CheckoutRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/InventoryRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/OrderRoutes.php';
 require_once __DIR__ . '/rest/ROUTES/OrderItemRoutes.php';

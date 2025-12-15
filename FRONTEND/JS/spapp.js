@@ -38,6 +38,11 @@ $(document).ready(function() {
           WishlistService.init();
         }
         break;
+      case 'checkout':
+        if (typeof CheckoutService !== 'undefined' && CheckoutService.init) {
+          CheckoutService.init();
+        }
+        break;
       case 'user':
         if (typeof UserService !== 'undefined' && UserService.init) {
           UserService.init();
