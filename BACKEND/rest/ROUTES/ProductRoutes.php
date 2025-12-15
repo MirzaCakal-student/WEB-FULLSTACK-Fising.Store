@@ -1,5 +1,5 @@
 <?php
-
+ //finished
 /**
  * GET all products (PUBLIC - no auth required)
  */

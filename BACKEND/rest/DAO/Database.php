@@ -1,4 +1,5 @@
 <?php
+ //finished
 class Database {
     private static $host = 'localhost';
     private static $dbName = 'fishingplanet';

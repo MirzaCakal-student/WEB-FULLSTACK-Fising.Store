@@ -1,5 +1,5 @@
 <?php
-
+ //finished
 Flight::route('POST /checkout', function() {
     $currentUser = Flight::get('user');
 
