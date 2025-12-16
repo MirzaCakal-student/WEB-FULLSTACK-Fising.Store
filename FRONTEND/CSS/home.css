@@ -1,0 +1,7 @@
+/*finished*/
+ body { padding-top: 76px; background-color: #f8f9fa; }
+    .navbar-brand { font-weight: 600; letter-spacing: 0.5px; }
+    footer { background: #003366; color: white; text-align: center; padding: 15px 0; margin-top: 40px; }
+    
+    /* Hide navigation items by default */
+    #logoutNav, #cartNav, #wishlistNav, #adminNav, #userNav { display: none; }

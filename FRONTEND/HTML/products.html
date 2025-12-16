@@ -1,3 +1,4 @@
+<!-- finished-->
 <div class="container py-4">
 
   <h2 class="page-title mb-4 text-success">Our Products</h2>
@@ -7,7 +8,7 @@
     <div class="col-md-6">
       <div class="search-box position-relative">
         <i class="bi bi-search"></i>
-        <input id="prod-search" class="form-control" placeholder="Search products…">
+        <input id="prod-search" class="form-control" placeholder="Search productsâ€¦">
       </div>
     </div>
     <div class="col-md-6">
@@ -26,10 +27,10 @@
   <div class="d-flex justify-content-between align-items-center mb-3">
     <span id="prod-count" class="text-muted">Showing 0 products</span>
     <select id="prod-sort" class="form-select form-select-sm" style="width:auto;">
-      <option value="name-asc">Name (A–Z)</option>
-      <option value="name-desc">Name (Z–A)</option>
-      <option value="price-asc">Price (Low → High)</option>
-      <option value="price-desc">Price (High → Low)</option>
+      <option value="name-asc">Name (Aâ€“Z)</option>
+      <option value="name-desc">Name (Zâ€“A)</option>
+      <option value="price-asc">Price (Low â†’ High)</option>
+      <option value="price-desc">Price (High â†’ Low)</option>
     </select>
   </div>
 
@@ -68,19 +69,3 @@
     </div>
   </div>
 </div>
-
-<script>
-  // Kick off when this view becomes visible (SPApp loads the fragment)
-  (function initProductsView(){
-    // tiny guard so we don’t double-bind on SPA revisits
-    if (window.__productsBound) return;
-    window.__productsBound = true;
-
-    document.getElementById('prod-search')?.addEventListener('input', filterProducts);
-    document.getElementById('prod-category')?.addEventListener('change', filterProducts);
-    document.getElementById('prod-sort')?.addEventListener('change', sortProducts);
-
-    // load from backend
-    fetchProductsFromBackend();
-  })();
-</script>

@@ -1,4 +1,5 @@
 <?php
+ //finished
 require_once __DIR__ . '/BaseService.php';
 require_once __DIR__ . '/../DAO/UserDAO.php';
 
@@ -43,7 +44,7 @@ class UserService extends BaseService {
         unset($data['password']);
 
         if (empty($data['role'])) {
-            $data['role'] = 'customer';
+            $data['role'] = Roles::USER;
         }
 
         return $this->dao->insert($data);
@@ -53,6 +54,14 @@ class UserService extends BaseService {
         if (isset($data['email']) &&
             !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             throw new Exception("Email is not valid.");
+        }
+
+        // Check if email is being changed and if the new email already exists
+        if (isset($data['email'])) {
+            $existingUser = $this->dao->getByEmail($data['email']);
+            if ($existingUser && $existingUser['user_id'] != $id) {
+                throw new Exception("Email already in use by another account.");
+            }
         }
 
         if (!empty($data['password'])) {

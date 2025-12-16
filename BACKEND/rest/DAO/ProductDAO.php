@@ -1,4 +1,5 @@
 <?php
+ //finished
 require_once __DIR__ . '/BaseDao.php';
 
 class ProductDAO extends BaseDao {
@@ -17,3 +18,4 @@ class ProductDAO extends BaseDao {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
+?>

@@ -1,29 +1,18 @@
 <?php
-use OpenApi\Annotations as OA;
-
-
+ //finished
 /**
- * @OA\Get(
- *     path="/wishlist-items",
- *     tags={"wishlist"},
- *     summary="Get wishlist items (optionally filtered by user)",
- *     @OA\Parameter(
- *         name="user_id",
- *         in="query",
- *         required=false,
- *         @OA\Schema(type="integer"),
- *         description="Filter wishlist by user ID"
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Wishlist items list"
- *     )
- * )
+ * GET wishlist items for current user
  */
-Flight::route('GET /wishlist-items', function () {
-    $user_id = Flight::request()->query['user_id'] ?? null;
+Flight::route('GET /wishlist-items', function() {
+    $currentUser = Flight::get('user');
+    
+    if (!$currentUser) {
+        Flight::json(['success' => false, 'message' => 'User not authenticated'], 401);
+        return;
+    }
+    
     try {
-        $items = Flight::wishlistItemService()->get_wishlist_items($user_id);
+        $items = Flight::wishlistItemService()->get_wishlist_by_user($currentUser->user_id);
         Flight::json(['success' => true, 'data' => $items]);
     } catch (Exception $e) {
         Flight::json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -31,28 +20,23 @@ Flight::route('GET /wishlist-items', function () {
 });
 
 /**
- * @OA\Post(
- *     path="/wishlist-items",
- *     tags={"wishlist"},
- *     summary="Add item to wishlist",
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             required={"user_id","product_id"},
- *             @OA\Property(property="user_id", type="integer", example=1),
- *             @OA\Property(property="product_id", type="integer", example=3)
- *         )
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Item added to wishlist"
- *     )
- * )
+ * ADD item to wishlist (or REMOVE if already exists - toggle)
  */
-Flight::route('POST /wishlist-items', function () {
+Flight::route('POST /wishlist-items', function() {
+    $currentUser = Flight::get('user');
+    
+    if (!$currentUser) {
+        Flight::json(['success' => false, 'message' => 'User not authenticated'], 401);
+        return;
+    }
+    
     $data = Flight::request()->data->getData();
+    
+    // Force user_id to be current user
+    $data['user_id'] = $currentUser->user_id;
+    
     try {
-        $created = Flight::wishlistItemService()->add_wishlist_item($data);
+        $created = Flight::wishlistItemService()->toggle_wishlist($data);
         Flight::json(['success' => true, 'data' => $created]);
     } catch (Exception $e) {
         Flight::json(['success' => false, 'message' => $e->getMessage()], 400);
@@ -60,24 +44,22 @@ Flight::route('POST /wishlist-items', function () {
 });
 
 /**
- * @OA\Delete(
- *     path="/wishlist-items/{id}",
- *     tags={"wishlist"},
- *     summary="Delete wishlist item",
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer"),
- *         description="Wishlist item ID"
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="Item removed from wishlist"
- *     )
- * )
+ * DELETE wishlist item
  */
-Flight::route('DELETE /wishlist-items/@id', function ($id) {
+Flight::route('DELETE /wishlist-items/@id', function($id) {
+    $currentUser = Flight::get('user');
+    
+    if (!$currentUser) {
+        Flight::json(['success' => false, 'message' => 'User not authenticated'], 401);
+        return;
+    }
+    
+    // Verify ownership
+    $wishlistItem = Flight::wishlistItemService()->get_by_id($id);
+    if (!$wishlistItem || $wishlistItem['user_id'] != $currentUser->user_id) {
+        Flight::halt(403, json_encode(['message' => 'Access denied']));
+    }
+    
     try {
         $res = Flight::wishlistItemService()->delete_wishlist_item($id);
         Flight::json(['success' => true, 'data' => $res]);
@@ -85,3 +67,4 @@ Flight::route('DELETE /wishlist-items/@id', function ($id) {
         Flight::json(['success' => false, 'message' => $e->getMessage()], 400);
     }
 });
+?>

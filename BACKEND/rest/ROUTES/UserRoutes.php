@@ -1,19 +1,11 @@
 <?php
-use OpenApi\Annotations as OA;
-
-
+ //finished
 /**
- * @OA\Get(
- *     path="/users",
- *     tags={"users"},
- *     summary="Get all users",
- *     @OA\Response(
- *         response=200,
- *         description="User list"
- *     )
- * )
+ * GET all users (ADMIN ONLY)
  */
 Flight::route('GET /users', function () {
+    Flight::authMiddleware()->authorizeRole(Roles::ADMIN);
+    
     try {
         $users = Flight::userService()->get_users();
         Flight::json(['success' => true, 'data' => $users]);
@@ -23,24 +15,20 @@ Flight::route('GET /users', function () {
 });
 
 /**
- * @OA\Get(
- *     path="/users/{id}",
- *     tags={"users"},
- *     summary="Get user by ID",
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer"),
- *         description="User ID"
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="User data"
- *     )
- * )
+ * GET user by ID (User can view their own profile, Admin can view any)
  */
 Flight::route('GET /users/@id', function ($id) {
+    $currentUser = Flight::get('user');
+
+    if (!$currentUser) {
+        Flight::halt(401, json_encode(['success' => false, 'message' => 'User not authenticated']));
+    }
+
+    // Admin can see anyone, User can only see themselves
+    if (isset($currentUser->role) && $currentUser->role !== Roles::ADMIN && isset($currentUser->user_id) && $currentUser->user_id != $id) {
+        Flight::halt(403, json_encode(['success' => false, 'message' => 'Access denied']));
+    }
+
     try {
         $user = Flight::userService()->get_user_by_id($id);
         Flight::json(['success' => true, 'data' => $user]);
@@ -50,27 +38,12 @@ Flight::route('GET /users/@id', function ($id) {
 });
 
 /**
- * @OA\Post(
- *     path="/users",
- *     tags={"users"},
- *     summary="Create new user",
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             required={"username","email","password"},
- *             @OA\Property(property="username", type="string", example="mirza"),
- *             @OA\Property(property="email", type="string", example="mirza@example.com"),
- *             @OA\Property(property="password", type="string", example="some_password"),
- *             @OA\Property(property="role", type="string", example="user")
- *         )
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="User created"
- *     )
- * )
+ * CREATE new user (PUBLIC for registration, handled in AuthRoutes)
+ * This route is for ADMIN to manually create users
  */
 Flight::route('POST /users', function () {
+    Flight::authMiddleware()->authorizeRole(Roles::ADMIN);
+    
     $data = Flight::request()->data->getData();
     try {
         $created = Flight::userService()->add_user($data);
@@ -81,32 +54,20 @@ Flight::route('POST /users', function () {
 });
 
 /**
- * @OA\Put(
- *     path="/users/{id}",
- *     tags={"users"},
- *     summary="Update user",
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *     @OA\RequestBody(
- *         required=true,
- *         @OA\JsonContent(
- *             @OA\Property(property="username", type="string"),
- *             @OA\Property(property="email", type="string"),
- *             @OA\Property(property="password", type="string"),
- *             @OA\Property(property="role", type="string")
- *         )
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="User updated"
- *     )
- * )
+ * UPDATE user (User can update themselves, Admin can update anyone)
  */
 Flight::route('PUT /users/@id', function ($id) {
+    $currentUser = Flight::get('user');
+
+    if (!$currentUser) {
+        Flight::halt(401, json_encode(['success' => false, 'message' => 'User not authenticated']));
+    }
+
+    // Admin can update anyone, User can only update themselves
+    if (isset($currentUser->role) && $currentUser->role !== Roles::ADMIN && isset($currentUser->user_id) && $currentUser->user_id != $id) {
+        Flight::halt(403, json_encode(['success' => false, 'message' => 'Access denied']));
+    }
+
     $data = Flight::request()->data->getData();
     try {
         $res = Flight::userService()->update_user($id, $data);
@@ -117,23 +78,20 @@ Flight::route('PUT /users/@id', function ($id) {
 });
 
 /**
- * @OA\Delete(
- *     path="/users/{id}",
- *     tags={"users"},
- *     summary="Delete user",
- *     @OA\Parameter(
- *         name="id",
- *         in="path",
- *         required=true,
- *         @OA\Schema(type="integer")
- *     ),
- *     @OA\Response(
- *         response=200,
- *         description="User deleted"
- *     )
- * )
+ * DELETE user (User can delete themselves, Admin can delete anyone)
  */
 Flight::route('DELETE /users/@id', function ($id) {
+    $currentUser = Flight::get('user');
+
+    if (!$currentUser) {
+        Flight::halt(401, json_encode(['success' => false, 'message' => 'User not authenticated']));
+    }
+
+    // Admin can delete anyone, User can only delete themselves
+    if (isset($currentUser->role) && $currentUser->role !== Roles::ADMIN && isset($currentUser->user_id) && $currentUser->user_id != $id) {
+        Flight::halt(403, json_encode(['success' => false, 'message' => 'Access denied']));
+    }
+
     try {
         $res = Flight::userService()->delete_user($id);
         Flight::json(['success' => true, 'data' => $res]);
@@ -141,3 +99,4 @@ Flight::route('DELETE /users/@id', function ($id) {
         Flight::json(['success' => false, 'message' => $e->getMessage()], 400);
     }
 });
+?>

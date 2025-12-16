@@ -1,1 +1,2 @@
-BACKEND/vendor/
+/vendor/
+/BACKEND/vendor/
