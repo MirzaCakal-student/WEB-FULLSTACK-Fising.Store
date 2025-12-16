@@ -1,0 +1,2403 @@
+================================================================================
+                    FISHING STORE - FULL PROJECT DOCUMENTATION
+================================================================================
+
+This document provides a complete breakdown of every JavaScript and PHP file
+in the Fishing Store e-commerce application, explaining the purpose of each
+file, its functions, and the code logic.
+
+================================================================================
+                                  FRONTEND
+================================================================================
+
+--------------------------------------------------------------------------------
+                                     JS
+--------------------------------------------------------------------------------
+
+================================================================================
+FILE: AdminService.js
+PURPOSE: Manages the admin panel functionality for managing products, users, orders, and payments
+LOCATION: FRONTEND/JS/AdminService.js
+
+FUNCTIONS:
+
+1. init()
+   - Initializes the admin panel
+   - Checks if the current user has admin role (Constants.ADMIN_ROLE)
+   - If not admin, shows error toast and redirects to #home
+   - Loads all data: products, users, orders, and payments
+   - Sets up event handlers
+
+2. setupEventHandlers()
+   - Attaches submit event handlers to product and user forms
+   - Prevents default form submission and calls appropriate save methods
+
+3. loadProducts()
+   - Makes GET request to 'products' endpoint via RestClient
+   - On success, calls renderProductsTable() with the product data
+
+4. renderProductsTable(products)
+   - Takes array of products as parameter
+   - Generates HTML table rows for each product
+   - Displays: product ID, image, name, category, price, stock quantity
+   - Includes Edit and Delete buttons for each product
+   - Uses Utils.getImageUrl() to format image URLs properly
+   - Adds onerror handler to show placeholder if image fails to load
+
+5. openAddProductModal()
+   - Clears all form fields in the product modal
+   - Sets modal title to "Add Product"
+   - Sets default category to "Rods"
+   - Shows the Bootstrap modal
+
+6. editProduct(productId)
+   - Makes GET request to get product by ID
+   - Populates the product form with existing product data
+   - Changes modal title to "Edit Product"
+   - Shows the Bootstrap modal
+
+7. saveProduct()
+   - Collects form data (name, category, price, stock, image URL)
+   - Validates that required fields are filled
+   - If product_id exists: makes PUT request to update product
+   - If no product_id: makes POST request to create new product
+   - Shows success/error toast messages
+   - Closes modal and reloads product list on success
+
+8. deleteProduct(productId)
+   - Shows confirmation dialog
+   - Makes DELETE request to remove product
+   - Reloads product list on success
+
+9. loadUsers()
+   - Makes GET request to 'users' endpoint
+   - Calls renderUsersTable() with user data
+
+10. renderUsersTable(users)
+    - Generates HTML table rows for each user
+    - Displays: user ID, username, email, role badge, created date
+    - Role badge is red for admin, blue for regular user
+    - Includes Edit and Delete buttons
+
+11. openAddUserModal()
+    - Clears all form fields in user modal
+    - Sets modal title to "Add User"
+    - Sets default role to "user"
+    - Shows the Bootstrap modal
+
+12. editUser(userId)
+    - Gets user data by ID via RestClient
+    - Populates user form with existing data
+    - Password field left empty (not showing existing password)
+    - Shows the modal
+
+13. saveUser()
+    - Collects form data (username, email, role, optional password)
+    - Validates required fields
+    - For updates: makes PUT request (password optional)
+    - For new users: validates password is provided, then makes POST request
+    - Shows success/error messages
+    - Reloads user list on success
+
+14. deleteUser(userId)
+    - Shows confirmation dialog
+    - Makes DELETE request
+    - Reloads user list on success
+
+15. loadOrders()
+    - Makes GET request to 'orders' endpoint
+    - Calls renderOrdersTable() with order data
+
+16. renderOrdersTable(orders)
+    - Generates table rows for each order
+    - Displays: order ID, user ID, total amount, payment status, created date
+    - Includes View button for each order
+    - If no orders, shows "No orders yet" message
+
+17. viewOrder(orderId)
+    - Placeholder function showing "coming soon" toast
+    - Intended for viewing order details in future
+
+18. loadPayments()
+    - Makes GET request to 'payments' endpoint
+    - Calls renderPaymentsTable() with payment data
+
+19. renderPaymentsTable(payments)
+    - Generates table rows for each payment
+    - Displays: payment ID, order ID, amount, payment method, status, created date
+    - If no payments, shows "No payments yet" message
+
+CODE EXPLANATION:
+- Uses jQuery for DOM manipulation and event handling
+- All API calls go through RestClient for consistent authentication
+- Uses Bootstrap modals for add/edit interfaces
+- Utils.blockUI() and Utils.unblockUI() provide loading indicators
+- Utils.showToast() displays user feedback messages
+- Image handling includes fallback placeholders for missing images
+
+================================================================================
+FILE: AuthService.js
+PURPOSE: Handles user authentication (login, logout, registration)
+LOCATION: FRONTEND/JS/AuthService.js
+
+FUNCTIONS:
+
+1. init()
+   - Initializes authentication state when page loads
+   - Checks localStorage for existing user_token and user data
+   - If token exists, parses user data and updates navbar
+   - Loads cart and wishlist counts if user is logged in
+   - If token/user is invalid, logs out user
+   - Sets up form submission handlers for login and signup forms
+
+2. handleLogin(form)
+   - Extracts email and password from login form
+   - Validates that both fields are filled
+   - Makes POST request to "auth/login" endpoint with credentials
+   - On success: stores token and user data in localStorage
+   - Logs authentication details to console for debugging
+   - Updates navbar to show logged-in state
+   - Shows success toast and redirects to home page
+   - On error: displays error message via toast
+
+3. handleSignup(form)
+   - Extracts name, surname, email, and password from signup form
+   - Combines first and last name into single username field
+   - Validates all required fields are filled
+   - Makes POST request to "auth/register" endpoint
+   - On success: auto-logs in the user by storing token and user data
+   - Updates navbar and redirects to home
+   - On error: displays error message
+
+4. logout(askConfirmation = true)
+   - Optionally shows confirmation dialog
+   - Removes user_token and user from localStorage
+   - Updates navbar to logged-out state
+   - Resets cart and wishlist badge counts to 0
+   - Shows logout success message
+   - Redirects to home page
+
+5. isLoggedIn()
+   - Checks if both user_token and user exist in localStorage
+   - Returns boolean true/false
+
+6. getCurrentUser()
+   - Retrieves user string from localStorage
+   - Parses JSON to get user object
+   - Returns user object or null if parsing fails
+
+CODE EXPLANATION:
+- Uses localStorage for client-side session persistence
+- JWT tokens are stored in "user_token" key
+- User object is stored as JSON string in "user" key
+- All AJAX calls use jQuery's $.ajax() with JSON content type
+- Token is included in Authorization header for protected routes
+- Form handlers use $(document).off().on() to prevent duplicate event bindings
+
+================================================================================
+FILE: CartService.js
+PURPOSE: Manages shopping cart functionality
+LOCATION: FRONTEND/JS/CartService.js
+
+PROPERTIES:
+- cartItems: Array storing current cart items
+
+FUNCTIONS:
+
+1. init()
+   - Initializes cart service
+   - Calls loadCart() to fetch cart data from backend
+
+2. loadCartCount()
+   - Checks if user is logged in via AuthService
+   - If not logged in, sets badge count to 0
+   - Makes GET request to 'cart' endpoint
+   - Updates cart badge with item count
+
+3. loadCart()
+   - If user not logged in, shows empty cart message
+   - Makes GET request to fetch full cart with product details
+   - Stores cart items in cartItems property
+   - Calls renderCart() to display items
+   - Updates cart count badge
+
+4. addItem(productId, quantity = 1)
+   - Checks if user is logged in (redirects to login if not)
+   - Makes POST request to 'cart' endpoint with product_id and quantity
+   - Shows success toast message
+   - Updates cart count badge
+
+5. updateQuantity(cartItemId, newQuantity)
+   - If quantity < 1, calls removeItem() instead
+   - Makes PUT request to update cart item quantity
+   - Reloads full cart to reflect changes
+
+6. removeItem(cartItemId)
+   - Shows confirmation dialog
+   - Makes DELETE request to remove specific cart item
+   - Reloads cart after removal
+
+7. clearCart()
+   - Shows confirmation dialog
+   - Makes DELETE request to 'cart' endpoint (clears entire cart)
+   - Reloads cart to show empty state
+
+8. renderCart()
+   - Checks if user is logged in and cart has items
+   - If empty, shows/hides appropriate div elements
+   - For each cart item, generates HTML row with:
+     - Product image with fallback placeholder
+     - Product name and unit price
+     - Quantity controls (-, input, + buttons)
+     - Item total (price × quantity)
+     - Delete button
+   - Calculates subtotal by summing all item totals
+   - Updates subtotal and final total displays
+
+9. renderEmptyCart()
+   - Hides cart content container
+   - Shows empty cart message div
+
+CODE EXPLANATION:
+- Cart is user-specific and stored in backend database
+- Each cart item has: cart_item_id, user_id, product_id, quantity, price, name, image_url
+- Quantity can be updated with +/- buttons
+- Real-time price calculations (quantity × unit price)
+- Utils.blockUI() shows loading state during operations
+- All operations require authentication (checked via AuthService)
+
+================================================================================
+FILE: CheckoutService.js
+PURPOSE: Handles multi-step checkout process
+LOCATION: FRONTEND/JS/CheckoutService.js
+
+PROPERTIES:
+- currentStep: Tracks which step user is on (1-4)
+- checkoutData: Object storing:
+  - personalInfo: {firstName, lastName, email, phone}
+  - shippingInfo: {country, city, address, zip}
+  - cartItems: Array of items being purchased
+  - totalAmount: Total price including shipping
+
+FUNCTIONS:
+
+1. init()
+   - Initializes checkout process
+   - Checks if user is logged in (redirects if not)
+   - Loads cart items for checkout
+   - Pre-fills personal info from logged-in user
+   - Sets up all event listeners
+   - Shows step 1 by default
+
+2. setupEventListeners()
+   - Attaches handlers to personal info form submission
+   - Attaches handlers to shipping address form submission
+   - Sets up Next button clicks (data-next attribute)
+   - Sets up Back button clicks (data-back attribute)
+   - Attaches handler to final "Finish Order" button
+
+3. loadCartForCheckout()
+   - Makes GET request to 'cart' endpoint
+   - Stores cart items in checkoutData.cartItems
+   - Calls calculateTotal() to compute order total
+
+4. calculateTotal()
+   - Loops through cart items
+   - Multiplies price × quantity for each item
+   - Sums up to get total amount
+   - Stores in checkoutData.totalAmount
+
+5. prefillPersonalInfo()
+   - Gets current user from AuthService
+   - Pre-fills email field with user's email
+   - Splits username into first and last name
+   - Pre-fills first name and last name fields
+
+6. goToStep(step)
+   - Validates current step before proceeding
+   - If validation fails, stays on current step
+   - Saves current step data
+   - Calls showStep() to display target step
+
+7. showStep(step)
+   - Updates currentStep property
+   - Hides all step divs by removing 'active' class
+   - Shows target step div by adding 'active' class
+   - Updates progress circle indicators
+   - If showing step 3 (review), calls populateReview()
+
+8. validateStep(step)
+   - For step 1: calls validatePersonalInfo()
+   - For step 2: calls validateShippingInfo()
+   - For steps 3 & 4: returns true (no validation)
+
+9. validatePersonalInfo()
+   - Checks firstName, lastName, email, phone are filled
+   - Validates email format using regex
+   - Verifies email matches logged-in user's registered email
+   - Adds/removes Bootstrap validation classes (is-invalid, is-valid)
+   - Shows toast messages for validation errors
+
+10. validateShippingInfo()
+    - Validates country, city, address, zip are filled
+    - Adds/removes validation classes
+    - Returns boolean result
+
+11. saveStepData(step)
+    - For step 1: saves personal info to checkoutData
+    - For step 2: saves shipping info to checkoutData
+
+12. populateReview()
+    - Generates HTML table rows for all cart items
+    - Shows product image, name, price, quantity
+    - Includes +/- buttons to adjust quantity in review step
+    - Calculates subtotal, adds shipping cost (€5.00)
+    - Displays all totals
+    - Shows personal info summary (name, email, phone)
+    - Shows shipping address summary
+    - Updates both step 3 and step 4 total displays
+
+13. updateCartQty(cartItemId, newQty)
+    - If quantity < 1, calls removeCartItem()
+    - Makes PUT request to update cart item
+    - Reloads cart and refreshes review display
+
+14. removeCartItem(cartItemId)
+    - Shows confirmation dialog
+    - Makes DELETE request to remove item
+    - Reloads cart and refreshes review
+
+15. processPayment()
+    - Gets current user and selected payment method
+    - Validates cart is not empty
+    - Prepares checkout data object with all info
+    - Makes POST request to 'checkout' endpoint
+    - On success:
+      - Shows success modal with order ID
+      - Displays confirmation email address
+      - Shows success toast
+    - On error: displays error message
+
+16. finishCheckout()
+    - Clears checkoutData object
+    - Resets to step 1
+    - Hides success modal
+    - Redirects to home page
+    - Shows thank you toast
+
+17. isValidEmail(email)
+    - Uses regex to validate email format
+    - Returns boolean
+
+CODE EXPLANATION:
+- Multi-step wizard: Personal Info → Shipping → Review → Payment
+- Each step has validation before proceeding
+- Data is saved incrementally as user progresses
+- Review step allows editing quantities before final submission
+- Checkout process creates order, order items, payment, and address records
+- Cart is cleared after successful checkout
+- Email must match registered user's email (security measure)
+- Shipping cost is hardcoded to €5.00
+
+================================================================================
+FILE: ProductService.js
+PURPOSE: Manages product listing, filtering, sorting, and cart operations
+LOCATION: FRONTEND/JS/ProductService.js
+
+PROPERTIES:
+- allProducts: Array of all products loaded from backend
+- filteredProducts: Array of products after applying search/filter
+
+FUNCTIONS:
+
+1. init()
+   - Initializes product service
+   - Calls loadProducts() to fetch all products
+   - Sets up event handlers for search, filter, and sort
+
+2. setupEventHandlers()
+   - Attaches input event to search field (#prod-search)
+   - Attaches change event to category dropdown (#prod-category)
+   - Attaches change event to sort dropdown (#prod-sort)
+   - All trigger filterProducts() or sortProducts() appropriately
+
+3. loadProducts()
+   - Makes GET request to 'products' endpoint
+   - Stores data in allProducts array
+   - Copies to filteredProducts array
+   - Calls renderProducts() to display
+   - On error: shows error alert in products container
+
+4. filterProducts()
+   - Gets search term from search input (lowercase)
+   - Gets selected category from dropdown
+   - Filters allProducts array where:
+     - Product name or category includes search term
+     - Product category matches selected category (or "all")
+   - Updates filteredProducts array
+   - Calls sortProducts() to apply sorting
+
+5. sortProducts()
+   - Gets sort option from dropdown (name-asc, name-desc, price-asc, price-desc)
+   - Sorts filteredProducts array using array.sort()
+   - For name: uses localeCompare()
+   - For price: uses parseFloat() and subtraction
+   - Calls renderProducts() to update display
+
+6. renderProducts()
+   - Updates product count display
+   - If no products match filters, shows "empty" message
+   - For each product, generates card HTML with:
+     - Product image with click-to-zoom functionality
+     - Wishlist heart button (if logged in)
+     - "In Stock" badge (if stock > 0)
+     - Category label
+     - Product name and price
+     - Stock availability text
+     - Quantity selector (+/- buttons)
+     - "Add to Cart" button (or "Out of Stock" if unavailable)
+   - Wishlist button shows filled heart if product is in wishlist
+   - Quantity selector is readonly input with min/max validation
+
+7. changeQty(productId, delta)
+   - Finds quantity input for specific product
+   - Gets current value and max stock
+   - Adds delta (-1 or +1)
+   - Enforces bounds (min=1, max=stock_quantity)
+   - Updates input value
+
+8. addToCart(productId)
+   - Checks if user is logged in (redirects if not)
+   - Gets quantity from input field
+   - Calls CartService.addItem() with product ID and quantity
+
+9. openImageModal(imageUrl, productName)
+   - Creates Bootstrap modal instance
+   - Sets modal image src and alt attributes
+   - Shows modal for full-size product image view
+
+CODE EXPLANATION:
+- Products can be filtered by search term and category
+- Sorting options: alphabetical (A-Z, Z-A) and price (low-high, high-low)
+- Each product card shows real-time stock availability
+- Quantity selector prevents ordering more than available stock
+- Wishlist functionality integrated (toggle heart icon)
+- Click on product image to view full-size
+- "Add to Cart" button disabled for out-of-stock items
+- Uses Utils.getImageUrl() and getPlaceholderImage() for image handling
+
+================================================================================
+FILE: UserService.js
+PURPOSE: Manages user profile editing, password changes, and account deletion
+LOCATION: FRONTEND/JS/UserService.js
+
+PROPERTIES:
+- currentUser: Stores the logged-in user object
+
+FUNCTIONS:
+
+1. init()
+   - Calls loadProfile() to populate form
+   - Initializes profile form handler
+   - Initializes password change form handler
+   - Sets up email availability checker
+   - Initializes password strength meter
+
+2. loadProfile()
+   - Gets current user from Utils.getCurrentUser()
+   - If no user, redirects to login page
+   - Splits username into first and last name
+   - Populates form fields with user data
+   - Updates profile header with username and email
+   - Updates session info display (email, role badge)
+
+3. initProfileForm()
+   - Attaches submit handler to profile form
+   - Calls updateProfile() on form submission
+
+4. initPasswordForm()
+   - Attaches submit handler to password change form
+   - Calls changePassword() on form submission
+
+5. initEmailCheck()
+   - Sets up debounced email availability checker
+   - On email input, waits 500ms after typing stops
+   - If email is same as current, marks as valid
+   - If email format is invalid, does nothing
+   - Otherwise, calls checkEmailAvailability()
+
+6. checkEmailAvailability(email)
+   - Makes GET request to fetch all users
+   - Checks if any other user has this email
+   - Shows "Email already taken" or "Email available" message
+   - Adds Bootstrap validation classes
+
+7. updatePasswordStrength(password)
+   - Calculates password strength score (0-100)
+   - Checks for: length ≥6, length ≥10, lowercase, uppercase, numbers, symbols
+   - Assigns strength level: None, Weak, Medium, Strong
+   - Updates progress bar width and color
+   - Updates strength text display
+
+8. updateProfile()
+   - Collects firstName, lastName, email from form
+   - Validates all fields are filled
+   - Makes PUT request to update user
+   - On success:
+     - Updates localStorage with new user data
+     - Shows success toast
+     - Reloads profile to reflect changes
+
+9. changePassword()
+   - Collects currentPassword, newPassword, confirmPassword
+   - Validates all fields are filled
+   - Checks new passwords match
+   - Validates new password is at least 6 characters
+   - First attempts login with current password to verify it
+   - If current password correct, makes PUT request to update password
+   - On success: clears password fields and resets strength meter
+   - On error: shows appropriate error message
+
+10. confirmDeleteAccount()
+    - Shows first confirmation dialog
+    - Prompts user to enter password for confirmation
+    - Calls deleteAccount() with password
+
+11. deleteAccount(password)
+    - Shows loading indicator
+    - First verifies password by attempting login
+    - If password correct, makes DELETE request for user account
+    - On success: logs out user and redirects
+    - On error: shows error message
+
+CODE EXPLANATION:
+- Profile update allows changing username and email
+- Email availability is checked in real-time with debouncing
+- Password change requires current password verification for security
+- Password strength meter provides visual feedback
+- Account deletion requires password confirmation
+- All operations use $.blockUI() for loading states
+- Uses toastr for user feedback messages
+- Changes to profile update localStorage immediately
+
+================================================================================
+FILE: WishlistService.js
+PURPOSE: Manages user's wishlist (favorite products)
+LOCATION: FRONTEND/JS/WishlistService.js
+
+PROPERTIES:
+- wishlistItems: Array storing current wishlist items
+
+FUNCTIONS:
+
+1. init()
+   - Initializes wishlist service
+   - Calls loadWishlist() to fetch wishlist data
+
+2. loadWishlistCount()
+   - Checks if user is logged in
+   - If not, sets wishlist badge to 0
+   - Makes GET request to 'wishlist-items' endpoint
+   - Updates wishlist badge with item count
+
+3. loadWishlist()
+   - If user not logged in, shows empty wishlist
+   - Makes GET request to fetch full wishlist with product details
+   - Stores items in wishlistItems property
+   - Calls renderWishlist() to display items
+   - Updates wishlist count badge
+
+4. isInWishlist(productId)
+   - Checks if product exists in wishlistItems array
+   - Returns boolean true/false
+
+5. toggle(productId)
+   - Checks if user is logged in (redirects if not)
+   - Finds if product already in wishlist
+   - If exists: removes from wishlist
+   - If doesn't exist: adds to wishlist
+
+6. addItem(productId)
+   - Makes POST request to 'wishlist-items' endpoint
+   - Shows success toast
+   - Reloads wishlist
+   - Refreshes products view if visible (updates heart icons)
+
+7. removeItem(wishlistItemId)
+   - Makes DELETE request to remove specific wishlist item
+   - Shows removal toast
+   - Reloads wishlist
+   - Refreshes products view if visible
+
+8. renderWishlist()
+   - If user not logged in or no items, shows empty state
+   - For each wishlist item, generates card HTML with:
+     - Product image with fallback placeholder
+     - Product name
+     - Product price
+     - "Add to Cart" button
+     - Delete button (trash icon)
+   - Uses Bootstrap grid layout (responsive columns)
+
+9. moveToCart(productId, wishlistItemId)
+   - Calls CartService.addItem() to add product to cart
+   - Optionally could remove from wishlist (currently commented out)
+
+10. renderEmptyWishlist()
+    - Clears wishlist grid
+    - Shows empty wishlist message
+
+CODE EXPLANATION:
+- Wishlist is user-specific and stored in backend
+- Acts as "favorites" or "saved for later" feature
+- Each wishlist item has: wishlist_item_id, user_id, product_id, name, price, image_url
+- Products can be moved from wishlist to cart
+- Wishlist state is synced with product display (heart icons)
+- Removing from wishlist updates products page immediately
+- All operations require authentication
+
+================================================================================
+FILE: constants.js
+PURPOSE: Defines global constants used throughout the application
+LOCATION: FRONTEND/JS/constants.js
+
+CONSTANTS:
+
+1. PROJECT_BASE_URL
+   - Value: "http://localhost/WEB-FULLSTACK-Fising.Store/BACKEND/"
+   - Used for all API requests
+   - Backend REST API base URL
+
+2. USER_ROLE
+   - Value: "user"
+   - Standard user role constant
+
+3. ADMIN_ROLE
+   - Value: "admin"
+   - Administrator role constant
+
+CODE EXPLANATION:
+- Single source of truth for configuration values
+- Changing base URL updates all API calls
+- Role constants ensure consistency across auth checks
+
+================================================================================
+FILE: rest-client.js
+PURPOSE: Provides centralized AJAX wrapper for API communication
+LOCATION: FRONTEND/JS/rest-client.js
+
+FUNCTIONS:
+
+1. get(url, callback, error_callback)
+   - Makes GET request to API endpoint
+   - Automatically adds Authorization header with JWT token from localStorage
+   - On success: calls callback function with response
+   - On error: calls error_callback or shows default error toast
+
+2. request(url, method, data, callback, error_callback)
+   - Generic request method for POST, PUT, PATCH, DELETE
+   - Sets content-type to application/json
+   - Automatically adds Authorization header with JWT token
+   - Converts data object to JSON string
+   - On success: calls callback with response
+   - On error: calls error_callback or shows default error toast
+
+3. post(url, data, callback, error_callback)
+   - Wrapper that calls request() with method="POST"
+
+4. put(url, data, callback, error_callback)
+   - Wrapper that calls request() with method="PUT"
+
+5. patch(url, data, callback, error_callback)
+   - Wrapper that calls request() with method="PATCH"
+
+6. delete(url, data, callback, error_callback)
+   - Wrapper that calls request() with method="DELETE"
+
+CODE EXPLANATION:
+- Centralizes all HTTP requests to backend API
+- Automatically handles JWT token authentication
+- Uses jQuery $.ajax() internally
+- Prepends Constants.PROJECT_BASE_URL to all URLs
+- Authorization header format: "Bearer <token>"
+- All data is sent/received as JSON
+- Provides consistent error handling across app
+
+================================================================================
+FILE: script.js
+PURPOSE: Global initialization and utility event handlers
+LOCATION: FRONTEND/JS/script.js
+
+CODE EXPLANATION:
+
+On document ready:
+- Configures toastr notification library:
+  - Enables close button
+  - Shows progress bar
+  - Position: top-right
+  - Timeout: 3 seconds
+- Initializes AuthService to check login state
+
+Event Handlers:
+
+1. Toggle password visibility
+   - Attached to elements with class 'toggle-password'
+   - Finds input in same input-group
+   - Toggles input type between 'password' and 'text'
+   - Toggles eye icon between bi-eye and bi-eye-slash
+
+2. Password strength checker
+   - Attached to #signupPassword and #newPassword inputs
+   - Calculates strength based on:
+     - Length ≥6
+     - Mixed case letters
+     - Numbers present
+     - Special characters present
+   - Updates progress bar (width and color)
+   - Shows text: None, Weak, Medium, Good, Strong
+
+3. Generate random password
+   - Attached to #generatePassBtn button
+   - Creates 12-character random password
+   - Uses uppercase, lowercase, numbers, and symbols
+   - Sets value in #signupPassword field
+   - Triggers password strength update
+
+4. Email validation feedback
+   - Attached to all email inputs on blur event
+   - Validates email format using regex
+   - Shows/hides validation feedback message
+
+CODE EXPLANATION:
+- Runs global initialization code
+- Provides UI enhancement utilities
+- Password generation uses secure random character selection
+- Event handlers use $(document).on() for dynamic elements
+- All handlers are reusable across different pages
+
+================================================================================
+FILE: spapp.js
+PURPOSE: Single Page Application (SPA) router
+LOCATION: FRONTEND/JS/spapp.js
+
+FUNCTIONS:
+
+1. loadPage(page)
+   - Hides all sections in #spapp container
+   - Shows only the active section by ID
+   - Loads HTML content from HTML/{page}.html
+   - If page not found, shows error alert
+   - After loading, calls initializePageService(page)
+
+2. initializePageService(page)
+   - Initializes the appropriate service for each page
+   - Switch statement maps pages to services:
+     - 'products' → ProductService.init()
+     - 'cart' → CartService.init()
+     - 'wishlist' → WishlistService.init()
+     - 'checkout' → CheckoutService.init()
+     - 'user' → UserService.init()
+     - 'admin' → AdminService.init()
+
+3. getHash()
+   - Gets current URL hash
+   - Removes '#' character
+   - Defaults to "home" if no hash
+
+Main execution:
+- On document ready:
+  - Loads initial page based on URL hash
+  - Sets up hashchange listener to load pages when hash changes
+
+CODE EXPLANATION:
+- Implements client-side routing using URL hash
+- Each section is loaded dynamically from HTML folder
+- Page transitions don't reload the entire page
+- Service initialization happens after HTML is loaded
+- Example: #products loads HTML/products.html and calls ProductService.init()
+- Allows for bookmark-able URLs (e.g., #cart, #checkout)
+
+================================================================================
+FILE: utils.js
+PURPOSE: Utility functions used throughout the application
+LOCATION: FRONTEND/JS/utils.js
+
+FUNCTIONS:
+
+1. parseJwt(token)
+   - Extracts payload from JWT token
+   - Splits token by '.' to get middle part (payload)
+   - Decodes base64 payload
+   - Parses JSON and returns payload object
+   - Returns null if token is invalid
+
+2. getImageUrl(imageUrl)
+   - Formats image URLs for consistent display
+   - If no imageUrl, returns placeholder SVG
+   - If full URL (http/https/data), returns as-is
+   - If starts with 'assets/', prepends FRONTEND base path
+   - If just filename, assumes it's in FRONTEND/assets/products/
+   - Returns properly formatted full URL
+
+3. getPlaceholderImage()
+   - Returns data URI for placeholder image
+   - SVG with gray background and "No Image" text
+
+4. updateBadges(cartCount, wishlistCount)
+   - Updates cart and wishlist badge counts in navbar
+   - Takes cart and wishlist counts as parameters
+
+5. updateNavbar(isLoggedIn, user)
+   - Shows/hides navbar items based on login state
+   - If logged in:
+     - Hides login/signup links
+     - If admin: shows Admin, Profile, Logout (hides cart/wishlist/checkout/about)
+     - If regular user: shows all user features including About
+   - If not logged in:
+     - Shows login, signup, and About links
+     - Hides all authenticated links
+
+6. showToast(message, type)
+   - Displays notification using toastr library
+   - Types: success, info, warning, error
+   - If toastr not available, logs to console
+
+7. blockUI(message)
+   - Shows full-screen loading overlay
+   - Displays message with hourglass icon
+   - Uses jQuery BlockUI plugin if available
+
+8. unblockUI()
+   - Removes loading overlay
+   - Uses jQuery BlockUI plugin
+
+9. getCurrentUser()
+   - Gets user object from localStorage
+   - Parses JSON string to object
+   - Returns null if parsing fails
+
+10. logout()
+    - Removes token and user from localStorage
+    - Updates navbar to logged-out state
+    - Resets badges to 0
+    - Shows logout toast
+    - Redirects to home page
+
+CODE EXPLANATION:
+- Provides reusable utility functions for common operations
+- Image URL handling ensures consistent paths between FRONTEND and BACKEND
+- Navbar updates handle different user roles (admin vs regular user)
+- Admin users have restricted navigation (no shopping features visible)
+- Regular users see full e-commerce features + About page
+- Loading states use BlockUI for better UX
+- JWT parsing allows extracting user data from token
+
+
+================================================================================
+                                  BACKEND
+================================================================================
+
+--------------------------------------------------------------------------------
+                                    DAO
+--------------------------------------------------------------------------------
+
+================================================================================
+FILE: Database.php
+PURPOSE: Database connection singleton class
+LOCATION: BACKEND/rest/DAO/Database.php
+
+PROPERTIES:
+- host: 'localhost'
+- dbName: 'fishingplanet'
+- username: 'root'
+- password: ''
+- connection: Static PDO connection instance
+
+FUNCTIONS:
+
+1. connect()
+   - Creates PDO connection if not already exists (singleton pattern)
+   - Connection parameters:
+     - Host: localhost
+     - Database: fishingplanet
+     - User: root
+     - Password: empty
+   - Sets PDO attributes:
+     - ERRMODE_EXCEPTION: Throws exceptions on errors
+     - FETCH_ASSOC: Returns associative arrays
+   - Returns PDO connection object
+   - Dies with error message if connection fails
+
+CODE EXPLANATION:
+- Singleton pattern ensures only one database connection
+- Uses PDO for database abstraction
+- MySQL database on localhost
+- Error mode set to exceptions for better error handling
+- All fetch operations return associative arrays by default
+
+================================================================================
+FILE: BASEDAO.php
+PURPOSE: Base Data Access Object class with CRUD operations
+LOCATION: BACKEND/rest/DAO/BASEDAO.php
+
+PROPERTIES:
+- table: Table name for database operations
+- idColumn: Primary key column name (default: 'id')
+- connection: PDO database connection
+
+CONSTRUCTOR:
+- Takes table name and optional idColumn name
+- Establishes database connection via Database::connect()
+
+FUNCTIONS:
+
+1. getAll()
+   - Selects all records from table
+   - Returns array of all rows as associative arrays
+
+2. getById($id)
+   - Selects single record by ID
+   - Uses prepared statement with named parameter
+   - Returns single row as associative array
+   - Returns false if not found
+
+3. queryUnique($query, $params = [])
+   - Executes custom SQL query
+   - Returns single row (fetch)
+   - Takes optional parameters array for prepared statement
+
+4. query($query, $params = [])
+   - Executes custom SQL query
+   - Returns all matching rows (fetchAll)
+   - Takes optional parameters array
+
+5. insert($data)
+   - Inserts new record into table
+   - Takes associative array of column => value pairs
+   - Dynamically builds INSERT statement
+   - Uses prepared statement with named placeholders
+   - Returns last inserted ID
+
+6. update($id, $data)
+   - Updates existing record by ID
+   - Takes ID and associative array of changes
+   - Dynamically builds UPDATE statement
+   - Uses prepared statement
+   - Returns boolean success
+
+7. delete($id)
+   - Deletes record by ID
+   - Uses prepared statement
+   - Returns boolean success
+
+CODE EXPLANATION:
+- Base class for all DAO classes (inheritance)
+- Provides generic CRUD operations
+- All child DAOs get these methods automatically
+- Uses prepared statements to prevent SQL injection
+- Dynamic query building based on data array keys
+- Column names in data array must match database columns
+
+================================================================================
+FILE: AddressDAO.php
+PURPOSE: Data access for user addresses
+LOCATION: BACKEND/rest/DAO/AddressDAO.php
+EXTENDS: BaseDao
+
+TABLE: addresses
+COLUMNS: address_id, user_id, full_name, street, city, zip_code, country, phone, created_at
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table name 'addresses'
+   - Sets primary key to 'address_id'
+
+2. getByUserId($userId)
+   - Retrieves all addresses for specific user
+   - Orders by created_at DESC (newest first)
+   - Returns array of address records
+
+CODE EXPLANATION:
+- Inherits all CRUD methods from BaseDao
+- Adds user-specific address retrieval
+- Used for managing shipping/billing addresses
+
+================================================================================
+FILE: AuthDAO.php
+PURPOSE: Data access for authentication operations
+LOCATION: BACKEND/rest/DAO/AuthDAO.php
+EXTENDS: BaseDao
+
+TABLE: users
+COLUMNS: user_id, username, email, password_hash, role, created_at
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table name 'users'
+
+2. get_user_by_email($email)
+   - Finds user by email address
+   - Uses prepared statement for security
+   - Returns user record as associative array
+   - Returns false if not found
+
+CODE EXPLANATION:
+- Used specifically for authentication operations
+- Email is unique identifier for login
+- Returns full user record including password_hash
+- Password verification happens in service layer
+
+================================================================================
+FILE: CartItemDAO.php
+PURPOSE: Data access for shopping cart items
+LOCATION: BACKEND/rest/DAO/CartItemDAO.php
+EXTENDS: BaseDao
+
+TABLE: cart_items
+COLUMNS: cart_item_id, user_id, product_id, quantity, created_at
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table 'cart_items'
+   - Sets primary key to 'cart_item_id'
+
+2. getByUserId($userId)
+   - Retrieves cart items for specific user
+   - Joins with products table to get product details
+   - Returns: cart_item_id, user_id, product_id, quantity, name, price, image_url
+   - Allows displaying cart with full product information
+
+3. getExistingCartItem($userId, $productId)
+   - Checks if user already has this product in cart
+   - Returns cart item record if exists
+   - Used to prevent duplicates or update quantity
+
+CODE EXPLANATION:
+- Each user has separate cart items
+- JOIN with products table provides product details for display
+- getExistingCartItem() enables "add to cart" logic:
+  - If item exists: increment quantity
+  - If new: insert new cart item
+
+================================================================================
+FILE: InventoryDAO.php
+PURPOSE: Data access for inventory tracking
+LOCATION: BACKEND/rest/DAO/InventoryDAO.php
+EXTENDS: BaseDao
+
+TABLE: inventory
+COLUMNS: inventory_id, product_id, change_type, quantity_change, note, created_at
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table 'inventory'
+   - Sets primary key to 'inventory_id'
+
+2. getByProductId($productId)
+   - Retrieves all inventory records for specific product
+   - Returns array of inventory change records
+   - Useful for tracking stock history
+
+CODE EXPLANATION:
+- Tracks inventory changes over time
+- change_type: e.g., "purchase", "sale", "adjustment", "return"
+- quantity_change: positive (added) or negative (removed)
+- Provides audit trail for stock movements
+
+================================================================================
+FILE: OrderDAO.php
+PURPOSE: Data access for customer orders
+LOCATION: BACKEND/rest/DAO/OrderDAO.php
+EXTENDS: BaseDao
+
+TABLE: orders
+COLUMNS: order_id, user_id, total_amount, status, created_at
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table 'orders'
+   - Sets primary key to 'order_id'
+
+2. getByUserId($userId)
+   - Retrieves all orders for specific user
+   - Returns array of order records
+   - Used for order history display
+
+CODE EXPLANATION:
+- Stores order header information
+- status field: "pending", "processing", "completed", "cancelled"
+- Order items stored separately in order_items table
+- Each user can have multiple orders
+
+================================================================================
+FILE: OrderItemDAO.php
+PURPOSE: Data access for order line items
+LOCATION: BACKEND/rest/DAO/OrderItemDAO.php
+EXTENDS: BaseDao
+
+TABLE: order_items
+COLUMNS: order_item_id, order_id, product_id, quantity, price
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table 'order_items'
+   - Sets primary key to 'order_item_id'
+
+2. getByOrderId($orderId)
+   - Retrieves all items for specific order
+   - Joins with products table to get product name and image
+   - Returns: order_item_id, order_id, product_id, quantity, price, name, image_url
+   - Used for displaying order details
+
+CODE EXPLANATION:
+- Each order can have multiple order items
+- Price is captured at order time (historical price)
+- JOIN with products table provides current product info
+- order_id links items to parent order
+
+================================================================================
+FILE: PaymentDAO.php
+PURPOSE: Data access for payment records
+LOCATION: BACKEND/rest/DAO/PaymentDAO.php
+EXTENDS: BaseDao
+
+TABLE: payments
+COLUMNS: payment_id, order_id, amount, method, status, created_at
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table 'payments'
+   - Sets primary key to 'payment_id'
+
+2. getByOrderId($orderId)
+   - Retrieves all payments for specific order
+   - Returns array of payment records
+   - Orders can have multiple payment records (partial payments, refunds)
+
+CODE EXPLANATION:
+- Tracks payment transactions
+- method: "credit_card", "paypal", "bank_transfer", etc.
+- status: "pending", "completed", "failed", "refunded"
+- Links to orders table via order_id
+
+================================================================================
+FILE: ProductDAO.php
+PURPOSE: Data access for products catalog
+LOCATION: BACKEND/rest/DAO/ProductDAO.php
+EXTENDS: BaseDao
+
+TABLE: products
+COLUMNS: product_id, name, category, price, stock_quantity, image_url, created_at
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table 'products'
+   - Sets primary key to 'product_id'
+
+2. getByCategory($category)
+   - Retrieves all products in specific category
+   - Returns array of product records
+   - Used for category filtering
+
+CODE EXPLANATION:
+- Stores product catalog
+- category: "Rods", "Reels", "Line", "Lures", "Accessories", etc.
+- stock_quantity: current available inventory
+- image_url: relative or full path to product image
+
+================================================================================
+FILE: UserDAO.php
+PURPOSE: Data access for user accounts
+LOCATION: BACKEND/rest/DAO/UserDAO.php
+EXTENDS: BaseDao
+
+TABLE: users
+COLUMNS: user_id, username, email, password_hash, role, created_at
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table 'users'
+   - Sets primary key to 'user_id'
+
+2. getByEmail($email)
+   - Finds user by email address
+   - Returns user record
+   - Used for email uniqueness checks and profile lookups
+
+CODE EXPLANATION:
+- Stores user account information
+- role: "user" or "admin"
+- password_hash: bcrypt hashed password (never store plain text)
+- email is unique identifier for authentication
+
+================================================================================
+FILE: WishlistItemDAO.php
+PURPOSE: Data access for wishlist items
+LOCATION: BACKEND/rest/DAO/WishlistItemDAO.php
+EXTENDS: BaseDao
+
+TABLE: wishlist_items
+COLUMNS: wishlist_item_id, user_id, product_id, created_at
+
+FUNCTIONS:
+
+1. __construct()
+   - Calls parent constructor with table 'wishlist_items'
+   - Sets primary key to 'wishlist_item_id'
+
+2. getByUserId($userId)
+   - Retrieves wishlist items for specific user
+   - Joins with products table
+   - Returns: wishlist_item_id, user_id, product_id, name, price, image_url
+   - Provides all data needed to display wishlist
+
+3. getExistingWishlistItem($userId, $productId)
+   - Checks if product is already in user's wishlist
+   - Returns wishlist item if exists
+   - Used for toggle functionality (add/remove)
+
+CODE EXPLANATION:
+- Each user has their own wishlist
+- JOIN with products ensures current product info displayed
+- Simple many-to-many relationship: users ↔ wishlist_items ↔ products
+- Used for "save for later" / favorites functionality
+
+
+--------------------------------------------------------------------------------
+                                 MIDDLEWARE
+--------------------------------------------------------------------------------
+
+================================================================================
+FILE: AuthMiddleware.php
+PURPOSE: JWT authentication and authorization middleware
+LOCATION: BACKEND/rest/MIDDLEWARE/AuthMiddleware.php
+
+FUNCTIONS:
+
+1. verifyToken()
+   - Gets JWT token from 'Authentication' header using Flight::request()->getHeader()
+   - If no token, halts with 401 error
+   - Decodes JWT using Firebase\JWT library
+   - Uses Config::JWT_SECRET() as secret key
+   - Algorithm: HS256
+   - Stores decoded user object in Flight::set('user', $decoded->user)
+   - Stores token in Flight::set('jwt_token', $token)
+   - Returns TRUE on success
+   - Halts with 401 if token is invalid or expired
+
+2. authorizeRole($requiredRole)
+   - Gets authenticated user from Flight::get('user')
+   - If no user, halts with 401 (not authenticated)
+   - Checks if user's role matches required role
+   - If role doesn't match, halts with 403 (forbidden)
+   - Returns TRUE if authorized
+
+3. authorizeRoles($roles)
+   - Similar to authorizeRole but accepts array of allowed roles
+   - Checks if user's role is in the allowed roles array
+   - Returns TRUE if user has any of the allowed roles
+   - Halts with 403 if user doesn't have required role
+
+4. authorizeOwner($resourceUserId)
+   - Checks if user is accessing their own resource
+   - Admin role can access any resource (returns TRUE)
+   - Regular users can only access resources where user_id matches
+   - Halts with 403 if user tries to access another user's resource
+   - Returns TRUE if authorized
+
+CODE EXPLANATION:
+- Middleware layer between routes and services
+- JWT token must be in 'Authentication' header
+- Token payload contains user object with user_id, email, role
+- Three authorization levels:
+  1. verifyToken() - basic authentication
+  2. authorizeRole() - specific role required
+  3. authorizeOwner() - owner or admin only
+- Uses Flight framework's halt() to stop execution and return error
+- Admin users have elevated privileges (can access all resources)
+
+
+--------------------------------------------------------------------------------
+                                 SERVICES
+--------------------------------------------------------------------------------
+
+================================================================================
+FILE: BaseService.php
+PURPOSE: Base service class providing generic CRUD operations
+LOCATION: BACKEND/rest/SERVICES/BaseService.php
+
+PROPERTIES:
+- dao: Data Access Object instance
+
+CONSTRUCTOR:
+- Takes DAO instance as parameter
+- Stores in protected $dao property
+
+FUNCTIONS:
+
+1. get_all()
+   - Returns all records by calling $dao->getAll()
+
+2. get_by_id($id)
+   - Returns single record by calling $dao->getById($id)
+
+3. add($entity)
+   - Inserts new record by calling $dao->insert($entity)
+   - Returns inserted ID
+
+4. update($id, $entity)
+   - Updates record by calling $dao->update($id, $entity)
+   - Returns boolean success
+
+5. delete($id)
+   - Deletes record by calling $dao->delete($id)
+   - Returns boolean success
+
+CODE EXPLANATION:
+- Base class for all service classes
+- Provides basic CRUD operations
+- Services can override or extend these methods
+- Services add business logic layer on top of DAO
+- DAO handles database, Service handles business rules
+
+================================================================================
+FILE: AuthService.php
+PURPOSE: Handles user registration and login
+LOCATION: BACKEND/rest/SERVICES/AuthService.php
+EXTENDS: BaseService
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates AuthDAO instance
+   - Passes to parent BaseService constructor
+
+2. register($entity)
+   - Validates email and password are provided
+   - Checks if email already exists using get_user_by_email()
+   - If exists, returns error
+   - Hashes password using password_hash() with PASSWORD_BCRYPT
+   - Removes plain password from entity
+   - Sets default role to 'user' if not specified
+   - Inserts user into database via $dao->insert()
+   - Fetches newly created user record
+   - Removes password_hash from user object (security)
+   - Creates JWT payload with user object and expiration
+   - Token expires in 48 hours (60 * 60 * 48 seconds)
+   - Encodes JWT using Firebase\JWT library
+   - Returns success response with user object and token
+   - Returns error if exception occurs
+
+3. login($entity)
+   - Gets user by email using get_user_by_email()
+   - Verifies password using password_verify()
+   - Compares plain text password with stored password_hash
+   - If invalid, returns error
+   - Removes password_hash from user object
+   - Creates JWT payload with user and expiration (48 hours)
+   - Encodes JWT token
+   - Returns success response with user and token
+
+CODE EXPLANATION:
+- Password never stored in plain text
+- Uses bcrypt for password hashing
+- JWT tokens expire after 48 hours
+- Auto-login after registration (returns token immediately)
+- Token payload contains full user object
+- Token signed with Config::JWT_SECRET()
+- Client stores token and sends in Authentication header
+- password_hash always removed before sending to client
+
+================================================================================
+FILE: AddressService.php
+PURPOSE: Business logic for managing user addresses
+LOCATION: BACKEND/rest/SERVICES/AddressService.php
+EXTENDS: BaseService
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates AddressDAO instance
+
+2. get_addresses_by_user($userId)
+   - Retrieves all addresses for specific user
+   - Calls $dao->getByUserId($userId)
+
+3. add_address($data)
+   - Validates required fields: user_id, full_name, street, city
+   - Throws exception if validation fails
+   - Calls $dao->insert($data) to save address
+   - Returns inserted address ID
+
+4. update_address($id, $data)
+   - Updates address by ID
+   - Returns boolean success
+
+5. delete_address($id)
+   - Deletes address by ID
+   - Returns boolean success
+
+CODE EXPLANATION:
+- Manages shipping/billing addresses
+- Each address belongs to a user
+- Validation ensures required fields present
+- Used during checkout process
+
+================================================================================
+FILE: CartItemService.php
+PURPOSE: Business logic for shopping cart operations
+LOCATION: BACKEND/rest/SERVICES/CartItemService.php
+EXTENDS: BaseService
+
+PROPERTIES:
+- productDao: ProductDAO instance for product lookups
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates CartItemDAO instance
+   - Creates ProductDAO instance
+
+2. get_cart_by_user($userId)
+   - Gets all cart items for user via $dao->getByUserId($userId)
+
+3. get_cart_items($userId)
+   - Alias for get_cart_by_user()
+
+4. add_to_cart($data)
+   - Validates user_id and product_id are provided
+   - Sets quantity to 1 if not provided or invalid
+   - Verifies product exists via $productDao->getById()
+   - Throws exception if product not found
+   - Checks if product already in cart via getExistingCartItem()
+   - If exists: updates quantity (adds new qty to existing)
+   - If new: inserts new cart item
+   - Returns cart_item_id
+
+5. add_cart_item($data)
+   - Alias for add_to_cart()
+
+6. update_cart_item($id, $data)
+   - Validates quantity is at least 1
+   - Updates cart item
+   - Returns boolean success
+
+7. delete_cart_item($id)
+   - Deletes cart item by ID
+   - Returns boolean success
+
+CODE EXPLANATION:
+- Cart is user-specific (each user has own cart)
+- Adding existing product increments quantity
+- Product must exist before adding to cart
+- Minimum quantity is 1 (validated)
+- Used for managing shopping cart before checkout
+
+================================================================================
+FILE: InventoryService.php
+PURPOSE: Business logic for inventory tracking
+LOCATION: BACKEND/rest/SERVICES/InventoryService.php
+EXTENDS: BaseService
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates InventoryDAO instance
+
+2. get_inventory_for_product($productId)
+   - Gets all inventory records for specific product
+   - Returns array of inventory change records
+
+3. add_inventory_record($data)
+   - Validates required fields: product_id, change_type, quantity_change
+   - Inserts new inventory record
+   - Returns inserted ID
+
+CODE EXPLANATION:
+- Tracks stock movements
+- Each record represents an inventory change event
+- change_type: describes reason for change
+- quantity_change: can be positive (stock in) or negative (stock out)
+- Provides audit trail for inventory management
+
+================================================================================
+FILE: OrderService.php
+PURPOSE: Business logic for order processing
+LOCATION: BACKEND/rest/SERVICES/OrderService.php
+EXTENDS: BaseService
+
+PROPERTIES:
+- orderItemDao: OrderItemDAO instance
+- cartItemDao: CartItemDAO instance
+- productDao: ProductDAO instance
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates OrderDAO instance
+   - Creates OrderItemDAO, CartItemDAO, ProductDAO instances
+
+2. get_orders()
+   - Returns all orders via $dao->getAll()
+
+3. get_order_by_id($id)
+   - Gets order by ID
+   - If order exists, retrieves order items via orderItemDao->getByOrderId()
+   - Adds items to order object
+   - Returns order with items
+
+4. create_order_from_cart($userId)
+   - Gets cart items for user
+   - Throws exception if cart is empty
+   - Calculates total by summing (price × quantity) for all items
+   - Creates order record with user_id, total_amount, status='pending'
+   - For each cart item, creates corresponding order_item record
+   - Returns complete order with items
+
+5. update_order($id, $data)
+   - Updates order by ID
+   - Returns boolean success
+
+6. delete_order($id)
+   - First deletes all order items for this order
+   - Then deletes the order itself
+   - Returns boolean success
+
+CODE EXPLANATION:
+- Orders created from cart items during checkout
+- Order items are snapshot of cart at order time
+- Prices captured in order items (historical pricing)
+- Deleting order cascades to order items
+- Order status tracks fulfillment state
+
+================================================================================
+FILE: OrderItemService.php
+PURPOSE: Basic service for order items
+LOCATION: BACKEND/rest/SERVICES/OrderItemService.php
+EXTENDS: BaseService
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates OrderItemDAO instance
+
+CODE EXPLANATION:
+- Simple service with only inherited CRUD methods
+- Order items usually managed through OrderService
+- This service provides direct access if needed
+
+================================================================================
+FILE: PaymentService.php
+PURPOSE: Business logic for payment processing
+LOCATION: BACKEND/rest/SERVICES/PaymentService.php
+EXTENDS: BaseService
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates PaymentDAO instance
+
+2. get_payments()
+   - Returns all payments
+
+3. get_payment_by_id($id)
+   - Returns single payment by ID
+
+4. get_payments_by_order($orderId)
+   - Gets all payments for specific order
+
+5. add_payment($data)
+   - Validates required fields: order_id, amount, method
+   - Validates amount is positive
+   - Sets default status to 'pending' if not provided
+   - Inserts payment record
+   - Returns payment ID
+
+6. update_payment($id, $data)
+   - Updates payment record
+   - Returns boolean success
+
+7. delete_payment($id)
+   - Deletes payment record
+   - Returns boolean success
+
+CODE EXPLANATION:
+- Tracks payment transactions for orders
+- Validates amount is positive number
+- Payment methods: credit card, PayPal, etc.
+- Payment status: pending, completed, failed
+- Multiple payments can exist per order
+
+================================================================================
+FILE: ProductService.php
+PURPOSE: Business logic for product management
+LOCATION: BACKEND/rest/SERVICES/ProductService.php
+EXTENDS: BaseService
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates ProductDAO instance
+
+2. get_products()
+   - Returns all products
+
+3. get_product_by_id($id)
+   - Returns single product by ID
+
+4. add_product($data)
+   - Validates name is provided
+   - Validates category is provided
+   - Validates price is 0 or positive
+   - Sets stock_quantity to 0 if not provided or negative
+   - Sets image_url to null if not provided
+   - Inserts product
+   - Returns product ID
+
+5. create_product($data)
+   - Alias for add_product()
+
+6. update_product($id, $data)
+   - Validates price is not negative
+   - Validates stock_quantity is not negative
+   - Updates product
+   - Returns boolean success
+
+7. delete_product($id)
+   - Deletes product by ID
+   - Returns boolean success
+
+CODE EXPLANATION:
+- Manages product catalog
+- Name and category are required
+- Price cannot be negative
+- Stock quantity defaults to 0 if not provided
+- Image URL is optional
+- Validation ensures data integrity
+
+================================================================================
+FILE: UserService.php
+PURPOSE: Business logic for user management
+LOCATION: BACKEND/rest/SERVICES/UserService.php
+EXTENDS: BaseService
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates UserDAO instance
+
+2. get_users()
+   - Returns all users
+   - Password hashes not removed here (handled elsewhere)
+
+3. get_user_by_id($id)
+   - Gets user by ID
+   - Removes password_hash before returning (security)
+
+4. get_user_by_email($email)
+   - Gets user by email
+   - Removes password_hash before returning
+
+5. add_user($data)
+   - Validates username is provided
+   - Validates email format using filter_var()
+   - Validates password is provided and at least 6 characters
+   - Hashes password using password_hash() with PASSWORD_BCRYPT
+   - Removes plain password from data
+   - Sets default role to Roles::USER if not provided
+   - Inserts user
+   - Returns user ID
+
+6. update_user($id, $data)
+   - Validates email format if email is being changed
+   - Checks if new email already exists (prevents duplicates)
+   - If password provided, hashes it and removes plain password
+   - Updates user
+   - Returns boolean success
+
+7. delete_user($id)
+   - Deletes user by ID
+   - Returns boolean success
+
+CODE EXPLANATION:
+- Password always hashed before storage
+- Password never returned in API responses
+- Email must be unique across all users
+- Minimum password length: 6 characters
+- Default role is 'user'
+- Email validation uses PHP's built-in filter
+- Password hashing uses bcrypt (same as AuthService)
+
+
+================================================================================
+FILE: WishlistItemService.php
+PURPOSE: Business logic for wishlist management
+LOCATION: BACKEND/rest/SERVICES/WishlistItemService.php
+EXTENDS: BaseService
+
+FUNCTIONS:
+
+1. __construct()
+   - Creates WishlistItemDAO instance
+
+2. get_wishlist_by_user($userId)
+   - Gets all wishlist items for user
+   - Returns array of wishlist items with product details
+
+3. get_wishlist_items($userId)
+   - Alias for get_wishlist_by_user()
+
+4. toggle_wishlist($data)
+   - Validates user_id and product_id are provided
+   - Checks if item already in wishlist via getExistingWishlistItem()
+   - If exists: removes from wishlist, returns {removed: true}
+   - If doesn't exist: adds to wishlist, returns {added: true, id: new_id}
+   - Implements toggle behavior (add/remove)
+
+5. add_wishlist_item($data)
+   - Alias for toggle_wishlist()
+
+6. delete_wishlist_item($id)
+   - Deletes wishlist item by ID
+   - Returns boolean success
+
+CODE EXPLANATION:
+- Wishlist is user-specific favorites list
+- Toggle functionality: clicking heart adds or removes
+- Each user-product combination can only exist once
+- Returns different response for add vs remove
+- Used for "save for later" feature
+
+
+--------------------------------------------------------------------------------
+                                   ROUTES
+--------------------------------------------------------------------------------
+
+================================================================================
+FILE: AuthRoutes.php
+PURPOSE: Routes for authentication (login, register)
+LOCATION: BACKEND/rest/ROUTES/AuthRoutes.php
+
+ROUTES:
+
+1. POST /auth/register
+   - Public route (no authentication required)
+   - Gets request data from Flight::request()->data->getData()
+   - Calls AuthService->register() with data
+   - If successful: returns 200 with success message, user, and token
+   - If failed: halts with 400 and error message
+   - Response includes JWT token for auto-login after registration
+
+2. POST /auth/login
+   - Public route (no authentication required)
+   - Gets email and password from request data
+   - Calls AuthService->login() with credentials
+   - If successful: returns 200 with success message, user, and token
+   - If failed: halts with 401 and error message
+   - Response includes JWT token for client storage
+
+CODE EXPLANATION:
+- Both routes are in /auth group
+- No authentication middleware required (public routes)
+- Both routes return JWT token on success
+- Token allows client to make authenticated requests
+- Client should store token and send in Authorization header
+
+================================================================================
+FILE: AddressRoutes.php
+PURPOSE: CRUD routes for user addresses
+LOCATION: BACKEND/rest/ROUTES/AddressRoutes.php
+
+ROUTES:
+
+1. GET /addresses
+   - Returns all addresses (admin use)
+   - Calls AddressService->get_all()
+
+2. GET /addresses/{id}
+   - Returns single address by ID
+   - Returns 404 if not found
+
+3. POST /addresses
+   - Creates new address
+   - Expects: user_id, street, city, zip, country
+   - Returns created address data
+
+4. PUT /addresses/{id}
+   - Updates existing address
+   - Accepts partial updates
+   - Returns success with updated data
+
+5. DELETE /addresses/{id}
+   - Deletes address by ID
+   - Returns success message
+
+CODE EXPLANATION:
+- Standard REST CRUD operations
+- All routes use Flight::json() for responses
+- Includes OpenAPI/Swagger annotations for documentation
+- Used for managing shipping/billing addresses
+
+================================================================================
+FILE: CartItemRoutes.php
+PURPOSE: Routes for shopping cart operations
+LOCATION: BACKEND/rest/ROUTES/CartItemRoutes.php
+
+ROUTES:
+
+1. GET /cart
+   - Gets cart items for current logged-in user
+   - Extracts user from Flight::get('user')
+   - If not authenticated, returns 401
+   - Calls CartItemService->get_cart_by_user()
+   - Returns array of cart items with product details
+
+2. POST /cart
+   - Adds item to cart
+   - Forces user_id to current user (security)
+   - Expects: product_id, quantity
+   - Calls CartItemService->add() which handles duplicate logic
+   - Returns cart_item_id
+
+3. PUT /cart/{id}
+   - Updates cart item quantity
+   - Verifies ownership (cart item belongs to current user)
+   - If not owner, halts with 403
+   - Updates quantity via CartItemService
+
+4. DELETE /cart/{id}
+   - Removes specific cart item
+   - Verifies ownership before deletion
+   - Returns success response
+
+5. DELETE /cart
+   - Clears entire cart for current user
+   - Calls CartItemService->clear_cart()
+   - Returns success response
+
+CODE EXPLANATION:
+- All routes require authentication (middleware)
+- User can only access their own cart items
+- Ownership verified before update/delete operations
+- POST automatically handles adding vs incrementing quantity
+- Cart is user-specific (isolated per user)
+
+================================================================================
+FILE: CartTotalsRoutes.php
+PURPOSE: Legacy cart totals endpoint (appears unused)
+LOCATION: BACKEND/rest/ROUTES/CartTotalsRoutes.php
+
+ROUTES:
+
+1. GET /cart-items
+   - Gets cart items for specific user
+   - Expects user_id in query string
+   - Returns cart items
+
+2. POST /cart-items
+   - Adds item to cart
+   - Expects: user_id, product_id, quantity
+
+3. PUT /cart-items/{id}
+   - Updates cart item quantity
+
+4. DELETE /cart-items/{id}
+   - Removes cart item
+
+CODE EXPLANATION:
+- Similar to CartItemRoutes.php but less secure
+- Doesn't verify user ownership properly
+- Uses query parameter for user_id instead of JWT
+- Appears to be legacy/alternative implementation
+- CartItemRoutes.php should be used instead (more secure)
+
+================================================================================
+FILE: CheckoutRoutes.php
+PURPOSE: Handles multi-step checkout process
+LOCATION: BACKEND/rest/ROUTES/CheckoutRoutes.php
+
+ROUTES:
+
+1. POST /checkout
+   - Processes complete checkout flow
+   - Gets current user from Flight::get('user')
+   - Validates required fields: email, firstName, lastName, phone, address, city, zip, country, paymentMethod
+   - Verifies email matches logged-in user's registered email (security)
+   - Gets user's cart items
+   - Validates cart is not empty
+   - Calculates subtotal from cart items
+   - Adds shipping cost (€5.00)
+   - Creates address record with shipping info
+   - Creates order record with total and status='pending'
+   - Creates order_item records for each cart item
+   - Creates payment record with status='completed'
+   - Sends order confirmation email via sendOrderConfirmationEmail()
+   - Clears user's cart
+   - Returns: order_id, payment_id, address_id, total, email_sent
+   - Returns 500 if any error occurs
+
+HELPER FUNCTION:
+
+sendOrderConfirmationEmail($toEmail, $customerName, $orderId, $total, $cartItems)
+   - Builds email subject and body
+   - Lists all ordered items with quantities and prices
+   - Shows order ID and total amount
+   - Sends email using PHP's mail() function
+   - Headers: From noreply@fishingstore.com, Reply-To support@fishingstore.com
+   - Logs success/failure to error log
+   - Returns boolean indicating if email was sent
+
+CODE EXPLANATION:
+- Single endpoint handles entire checkout process
+- Transaction includes: address, order, order items, payment, email
+- Email must match registered user (prevents checkout with different email)
+- Shipping is fixed at €5.00
+- Cart items are copied to order items (snapshot of cart)
+- Cart cleared after successful order
+- Email confirmation sent to customer
+- All operations wrapped in try-catch for error handling
+- Order status set to 'pending' initially
+- Payment status set to 'completed' (simplified payment flow)
+
+================================================================================
+FILE: InventoryRoutes.php
+PURPOSE: CRUD routes for inventory management
+LOCATION: BACKEND/rest/ROUTES/InventoryRoutes.php
+
+ROUTES:
+
+1. GET /inventory
+   - Returns all inventory records
+   - Admin use for viewing inventory history
+
+2. GET /inventory/{id}
+   - Returns single inventory record by ID
+   - Returns 404 if not found
+
+3. POST /inventory
+   - Creates new inventory record
+   - Expects: product_id, quantity
+   - Used for recording stock changes
+
+4. PUT /inventory/{id}
+   - Updates inventory record
+   - Used for corrections
+
+5. DELETE /inventory/{id}
+   - Deletes inventory record
+   - Returns success message
+
+CODE EXPLANATION:
+- Standard REST CRUD operations
+- Includes OpenAPI annotations
+- Used for tracking inventory changes over time
+- Each record represents a stock movement event
+
+================================================================================
+FILE: OrderRoutes.php
+PURPOSE: Routes for managing orders
+LOCATION: BACKEND/rest/ROUTES/OrderRoutes.php
+
+ROUTES:
+
+1. GET /orders
+   - Returns all orders
+   - Optional user_id query parameter to filter by user
+   - Admin can see all orders
+   - Users see only their orders (via filter)
+
+2. GET /orders/{id}
+   - Returns order by ID with order items
+   - Calls OrderService->get_order_by_id()
+   - Returns 500 if error
+
+3. POST /orders
+   - Creates new order
+   - Expects: user_id, total_price, status
+   - Returns created order data
+
+4. PUT /orders/{id}
+   - Updates order (status, total_price)
+   - Returns updated data
+
+5. DELETE /orders/{id}
+   - Deletes order and its items
+   - Returns success response
+
+CODE EXPLANATION:
+- Standard CRUD operations for orders
+- Order items are fetched with order details
+- Includes OpenAPI documentation
+- Used by admin panel for order management
+
+================================================================================
+FILE: OrderItemRoutes.php
+PURPOSE: Legacy/alternative order items routes
+LOCATION: BACKEND/rest/ROUTES/OrderItemRoutes.php
+
+ROUTES:
+
+1. GET /orders
+   - Filters orders by user_id if provided
+   - Returns order list
+
+2. GET /orders/{id}
+   - Returns order with items
+
+3. POST /orders
+   - Creates new order
+
+4. PUT /orders/{id}
+   - Updates order
+
+5. DELETE /orders/{id}
+   - Deletes order
+
+CODE EXPLANATION:
+- Appears to be duplicate/legacy routes
+- Similar to OrderRoutes.php
+- May be leftover from refactoring
+
+================================================================================
+FILE: PaymentRoutes.php
+PURPOSE: CRUD routes for payment management
+LOCATION: BACKEND/rest/ROUTES/PaymentRoutes.php
+
+ROUTES:
+
+1. GET /payments
+   - Returns all payment records
+   - Admin use
+
+2. GET /payments/{id}
+   - Returns single payment by ID
+   - Returns 404 if not found
+
+3. POST /payments
+   - Creates new payment record
+   - Expects: order_id, amount, method, status
+   - Validates amount and method are provided
+
+4. PUT /payments/{id}
+   - Updates payment record
+   - Can update status or amount
+
+5. DELETE /payments/{id}
+   - Deletes payment record
+   - Returns success message
+
+CODE EXPLANATION:
+- Standard REST CRUD for payments
+- Includes OpenAPI annotations
+- Used for payment tracking and management
+- Admin can view/update all payments
+
+================================================================================
+FILE: ProductRoutes.php
+PURPOSE: Routes for product catalog management
+LOCATION: BACKEND/rest/ROUTES/ProductRoutes.php
+
+ROUTES:
+
+1. GET /products
+   - Public route (no authentication)
+   - Returns all products
+   - Used for displaying product catalog
+
+2. GET /products/{id}
+   - Public route
+   - Returns single product by ID
+   - Used for product details page
+
+3. POST /products
+   - Admin only (checks Roles::ADMIN)
+   - Creates new product
+   - Expects: name, category, price, stock_quantity, image_url
+   - Returns created product_id
+
+4. PUT /products/{id}
+   - Admin only
+   - Updates existing product
+   - Returns success response
+
+5. DELETE /products/{id}
+   - Admin only
+   - Deletes product by ID
+   - Returns success response
+
+CODE EXPLANATION:
+- GET routes are public (anyone can browse products)
+- POST, PUT, DELETE require admin role
+- Middleware verifies admin role before allowing modifications
+- Public access allows browsing without login
+- Only admins can manage product catalog
+
+================================================================================
+FILE: UserRoutes.php
+PURPOSE: Routes for user management
+LOCATION: BACKEND/rest/ROUTES/UserRoutes.php
+
+ROUTES:
+
+1. GET /users
+   - Admin only
+   - Returns list of all users
+   - Used in admin panel
+
+2. GET /users/{id}
+   - Users can view their own profile
+   - Admins can view any profile
+   - Returns 403 if user tries to view another user's profile
+
+3. POST /users
+   - Admin only
+   - Creates new user account
+   - Expects: username, email, password, role
+   - Different from registration (this is admin creating users)
+
+4. PUT /users/{id}
+   - Users can update their own profile
+   - Admins can update any profile
+   - Expects: username, email, optional password
+   - Returns 403 if user tries to update another user
+
+5. DELETE /users/{id}
+   - Users can delete their own account
+   - Admins can delete any account
+   - Returns 403 if user tries to delete another user
+
+CODE EXPLANATION:
+- Role-based authorization:
+  - Admin: full access to all users
+  - User: can only access their own profile
+- User can edit/delete their own account
+- Creating users requires admin role (except registration via /auth/register)
+- Ownership checked by comparing currentUser.user_id with route parameter
+- Prevents users from accessing/modifying other users' data
+
+================================================================================
+FILE: WishlistItemRoutes.php
+PURPOSE: Routes for wishlist management
+LOCATION: BACKEND/rest/ROUTES/WishlistItemRoutes.php
+
+ROUTES:
+
+1. GET /wishlist-items
+   - Gets wishlist for current logged-in user
+   - Returns array of wishlist items with product details
+   - Requires authentication
+
+2. POST /wishlist-items
+   - Adds or removes item from wishlist (toggle)
+   - Forces user_id to current user
+   - Expects: product_id
+   - Calls WishlistItemService->toggle_wishlist()
+   - Returns {added: true} or {removed: true}
+
+3. DELETE /wishlist-items/{id}
+   - Removes specific wishlist item
+   - Verifies ownership before deletion
+   - Returns success response
+
+CODE EXPLANATION:
+- All routes require authentication
+- User can only access their own wishlist
+- POST route implements toggle behavior (add if not exists, remove if exists)
+- Ownership verified before any deletion
+- Wishlist is user-specific and isolated
+
+
+--------------------------------------------------------------------------------
+                                    REST
+--------------------------------------------------------------------------------
+
+================================================================================
+FILE: config.php
+PURPOSE: Configuration class and database connection
+LOCATION: BACKEND/rest/config.php
+
+CLASSES:
+
+1. Config
+   - Static class with configuration methods
+   - DB_NAME(): Returns 'fishingplanet'
+   - DB_PORT(): Returns 3306
+   - DB_USER(): Returns 'root'
+   - DB_PASSWORD(): Returns '' (empty string)
+   - DB_HOST(): Returns '127.0.0.1'
+   - JWT_SECRET(): Returns 'B8B8B8B88B8B8B88B8BB88BB88B8B8'
+
+2. Database
+   - Static class for database connection
+   - connect() method:
+     - Creates PDO connection (singleton pattern)
+     - Connection string: mysql:host=127.0.0.1;dbname=fishingplanet;port=3306
+     - Username: root
+     - Password: empty
+     - Sets ERRMODE to EXCEPTION
+     - Sets fetch mode to FETCH_ASSOC
+     - Dies with error message if connection fails
+     - Returns PDO connection object
+
+CODE EXPLANATION:
+- Configuration centralized in Config class
+- Database settings for local MySQL
+- JWT secret used for token signing/verification
+- Database uses singleton pattern (one connection)
+- Error reporting enabled (display_errors, display_startup_errors, E_ALL)
+- PDO exceptions enabled for better error handling
+- All queries return associative arrays by default
+
+================================================================================
+FILE: Roles.php
+PURPOSE: Role constants for authorization
+LOCATION: BACKEND/rest/Roles.php
+
+CLASS: Roles
+
+CONSTANTS:
+- ADMIN: "admin"
+- USER: "user"
+
+CODE EXPLANATION:
+- Simple class defining role constants
+- Used throughout application for role checks
+- Ensures consistent role naming
+- Prevents typos in role comparisons
+- Two roles: regular users and administrators
+
+================================================================================
+FILE: index.php
+PURPOSE: Main application entry point and router
+LOCATION: BACKEND/index.php
+
+CONFIGURATION:
+- Loads Composer autoloader
+- Loads config.php
+- Enables error reporting (display_errors, display_startup_errors, E_ALL)
+- Sets CORS headers:
+  - Access-Control-Allow-Origin: * (allow all origins)
+  - Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+  - Access-Control-Allow-Headers: Content-Type, Authentication, Authorization
+- Handles OPTIONS preflight requests (returns 200 OK)
+
+REQUIRES:
+1. Roles.php (must be first)
+2. MIDDLEWARE/AuthMiddleware.php
+3. All SERVICE files:
+   - AuthService, AddressService, CartItemService
+   - InventoryService, OrderService, OrderItemService
+   - PaymentService, ProductService, UserService, WishlistItemService
+
+FLIGHT REGISTRATIONS:
+- Registers all services as Flight components:
+  - auth_service → AuthService
+  - authMiddleware → AuthMiddleware
+  - addressService → AddressService
+  - cartItemService → CartItemService
+  - inventoryService → InventoryService
+  - orderService → OrderService
+  - orderItemService → OrderItemService
+  - paymentService → PaymentService
+  - productService → ProductService
+  - userService → UserService
+  - wishlistItemService → WishlistItemService
+
+DEBUG ROUTE:
+- GET /debug/headers
+  - Returns all header information
+  - Shows apache_request_headers, getallheaders
+  - Shows HTTP_AUTHORIZATION, REDIRECT_HTTP_AUTHORIZATION
+  - Lists all $_SERVER keys
+  - Used for debugging token authentication issues
+
+MIDDLEWARE (Global):
+- Flight::before('start') hook runs before every request
+- Public routes (no auth required):
+  - /auth/login
+  - /auth/register
+  - /docs
+  - /debug/headers
+  - GET /products (browse products)
+- Protected routes (auth required):
+  - Attempts to extract JWT token from multiple header sources:
+    1. $_SERVER['HTTP_AUTHORIZATION']
+    2. $_SERVER['REDIRECT_HTTP_AUTHORIZATION']
+    3. $_SERVER['HTTP_AUTHENTICATION']
+    4. $_SERVER['REDIRECT_HTTP_AUTHENTICATION']
+    5. apache_request_headers() - Authorization/Authentication
+    6. getallheaders() - Authorization/Authentication
+    7. Manual $_SERVER parsing for http_authorization/http_authentication
+  - Removes "Bearer " prefix if present
+  - Decodes JWT using Firebase\JWT with Config::JWT_SECRET()
+  - Stores decoded user in Flight::set('user')
+  - Stores token in Flight::set('jwt_token')
+  - Halts with 401 if token missing or invalid
+  - Logs authentication success/failure to error log
+
+ROUTE LOADING:
+- Requires all route files:
+  - AuthRoutes, AddressRoutes, CartItemRoutes
+  - CheckoutRoutes, InventoryRoutes, OrderRoutes
+  - OrderItemRoutes, PaymentRoutes, ProductRoutes
+  - UserRoutes, WishlistItemRoutes
+
+APPLICATION START:
+- Flight::start() begins routing and request handling
+
+CODE EXPLANATION:
+- Entry point for all API requests
+- Uses FlightPHP micro-framework for routing
+- CORS enabled for cross-origin requests (frontend on different domain)
+- Global authentication middleware protects most routes
+- JWT token can come from various header formats (compatibility)
+- Services registered with Flight for dependency injection
+- All routes loaded and registered
+- Error logging enabled for debugging authentication
+- Supports standard and Apache mod_rewrite header formats
+
+
+================================================================================
+                            END OF DOCUMENTATION
+================================================================================
+
+This documentation covers all PHP and JavaScript files in the Fishing Store
+e-commerce application. It provides detailed explanations of:
+
+FRONTEND (JavaScript):
+- 11 service files managing admin, auth, cart, checkout, products, users, wishlist
+- Utility files for constants, REST client, routing, and helper functions
+- Complete explanation of every function and its logic
+
+BACKEND (PHP):
+- 11 DAO classes for database access
+- 1 middleware class for authentication
+- 11 service classes for business logic
+- 11 route files for REST API endpoints
+- Configuration and main entry point
+
+Each file section includes:
+- File purpose and location
+- List of all functions with parameters
+- Detailed explanation of what each function does
+- Code logic walkthrough
+- How components interact with each other
+
+The application is a full-stack e-commerce platform for fishing equipment with:
+- User authentication (JWT)
+- Product catalog
+- Shopping cart
+- Wishlist
+- Multi-step checkout
+- Order management
+- Admin panel
+- User profiles
