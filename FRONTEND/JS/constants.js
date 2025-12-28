@@ -1,9 +1,9 @@
 /*finished*/
 const Constants = {
-  // Backend API base URL
-  PROJECT_BASE_URL: "http://localhost/WEB-FULLSTACK-Fising.Store/BACKEND/",
+  // IZBRIŠI "rest/" iz linka!
+  PROJECT_BASE_URL: "https://fishingstore.alwaysdata.net/BACKEND/",
   
-  // User roles
+  // Ostalo isto
   USER_ROLE: "user",
   ADMIN_ROLE: "admin"
 };

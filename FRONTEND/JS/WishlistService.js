@@ -11,7 +11,7 @@ const WishlistService = {
    * Initialize wishlist
    */
   init: function() {
-    console.log('âœ… WishlistService initialized');
+    console.log('WishlistService initialized');
     this.loadWishlist();
   },
 

@@ -9,7 +9,7 @@ const AdminService = {
    * Initialize admin panel
    */
   init: function() {
-    console.log('âœ… AdminService initialized');
+    console.log('AdminService initialized');
     
     const user = AuthService.getCurrentUser();
     if (!user || user.role !== Constants.ADMIN_ROLE) {

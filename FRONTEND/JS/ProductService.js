@@ -12,7 +12,7 @@ const ProductService = {
    * Initialize products view
    */
   init: function() {
-    console.log('âœ… ProductService initialized');
+    console.log(' ProductService initialized');
     this.loadProducts();
     this.setupEventHandlers();
   },
