@@ -1,31 +1,35 @@
 <?php
- //finished
+// Config fajl prilagođen za AlwaysData na osnovu tvojih slika
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 class Config {
+    public static function DB_HOST() {
+        // Tačan host sa tvoje slike (žuti okvir)
+        return 'mysql-fishingstore.alwaysdata.net'; 
+    }
+
     public static function DB_NAME() {
-        return 'fishingplanet';
+        // Ime tvoje importovane baze
+        return 'fishingstore_ibu'; 
+    }
+    
+    public static function DB_USER() {
+        // Tvoj kreirani korisnik sa slike br. 2
+        return '448787_mirza'; 
+    }
+    
+    public static function DB_PASSWORD() {
+    
+        return '2005Mirza'; 
     }
     
     public static function DB_PORT() {
         return 3306;
     }
-    
-    public static function DB_USER() {
-        return 'root';
-    }
-    
-    public static function DB_PASSWORD() {
-        return '';
-    }
-    
-    public static function DB_HOST() {
-        return '127.0.0.1';
-    }
 
-    // JWT Secret Key - IMPORTANT: Change this to a strong random string
+    // JWT Secret (ostaje isti)
     public static function JWT_SECRET() {
         return 'B8B8B8B88B8B8B88B8BB88BB88B8B8';
     }
@@ -47,6 +51,7 @@ class Database {
                     ]
                 );
             } catch (PDOException $e) {
+                // Ovo će ispisati grešku ako se ne uspije povezati
                 die("Connection failed: " . $e->getMessage());
             }
         }
